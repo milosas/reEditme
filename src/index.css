@@ -541,6 +541,23 @@ body {
    LANDING PAGE STYLES
    ============================================ */
 
+/* ============================================
+   GRADIENT STAT CARDS
+   ============================================ */
+
+.gradient-orange { background: linear-gradient(135deg, #FFF0EB 0%, #FFE4D6 100%); }
+.gradient-teal { background: linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%); }
+.gradient-purple { background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%); }
+.gradient-pink { background: linear-gradient(135deg, #FDF2F8 0%, #FCE7F3 100%); }
+
+/* Touch-friendly cards: disable hover transform on touch devices */
+@media (hover: none) {
+  .card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
 /* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;

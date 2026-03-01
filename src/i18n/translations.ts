@@ -1066,6 +1066,7 @@ export const translations = {
       postCreatorDesc: 'Sociālo tīklu ieraksti',
       tryOn: 'Try-on',
       posts: 'Ieraksti',
+      models: 'Modeļu izveide',
       settings: 'Iestatījumi',
       privacy: 'Privātums'
     },
@@ -1754,6 +1755,7 @@ export const translations = {
       postCreatorDesc: 'Sotsiaalmeedia postitused',
       tryOn: 'Try-on',
       posts: 'Postitused',
+      models: 'Mudelite loomine',
       settings: 'Seaded',
       privacy: 'Privaatsus'
     },
@@ -2442,6 +2444,7 @@ export const translations = {
       postCreatorDesc: 'Social media posts',
       tryOn: 'Try-on',
       posts: 'Posts',
+      models: 'Model Creation',
       settings: 'Settings',
       privacy: 'Privacy'
     },

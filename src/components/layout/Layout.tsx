@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Header } from './Header';
 import { Footer } from './Footer';
+import { BottomNav } from './BottomNav';
 
 export function Layout() {
   const location = useLocation();
@@ -9,7 +10,7 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-[#F7F7F5] flex flex-col">
       <Header />
-      <main className="flex-1">
+      <main className="flex-1 pb-20 md:pb-0">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -23,6 +24,7 @@ export function Layout() {
         </AnimatePresence>
       </main>
       <Footer />
+      <BottomNav />
     </div>
   );
 }
