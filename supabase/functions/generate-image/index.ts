@@ -13,7 +13,9 @@ async function checkCredits(authHeader: string, cost: number): Promise<{ userId:
   let userId: string
   try {
     const token = authHeader.replace('Bearer ', '')
-    const payload = JSON.parse(atob(token.split('.')[1]))
+    const base64Url = token.split('.')[1]
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const payload = JSON.parse(atob(base64))
     userId = payload.sub
     if (!userId) throw new Error('No user ID in token')
   } catch {
