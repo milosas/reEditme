@@ -69,6 +69,8 @@ interface GenerateRequest {
   avatarImageUrl?: string
   avatarImageBase64?: string
   avatarIsCustom?: boolean
+  category?: 'tops' | 'bottoms' | 'one-pieces' | 'auto'
+  garmentPhotoType?: 'auto' | 'model' | 'flat-lay'
   // post-processing fields:
   sourceImageUrl?: string    // try-on result to post-process
   backgroundPrompt?: string  // for background mode
@@ -302,7 +304,12 @@ async function handleTryOn(body: GenerateRequest): Promise<GenerateResponse> {
   const mode = mapQualityToMode(body.qualityMode || 'balanced')
   const numSamples = body.imageCount || 1
 
-  console.log(`FASHN try-on: mode=${mode}, samples=${numSamples}`)
+  // Category: auto-detect by default, or use frontend hint if provided
+  const category = body.category || 'auto'
+  // garment_photo_type: 'flat-lay' for product photos (most common user upload)
+  const garmentPhotoType = body.garmentPhotoType || 'flat-lay'
+
+  console.log(`FASHN try-on: mode=${mode}, samples=${numSamples}, category=${category}, photoType=${garmentPhotoType}`)
 
   // Call FASHN v1.6 via synchronous fal.run endpoint (blocks until result)
   const syncUrl = 'https://fal.run/fal-ai/fashn/tryon/v1.6'
@@ -316,7 +323,9 @@ async function handleTryOn(body: GenerateRequest): Promise<GenerateResponse> {
     body: JSON.stringify({
       model_image: modelImageUrl,
       garment_image: garmentUrl,
+      category,
       mode,
+      garment_photo_type: garmentPhotoType,
       num_samples: numSamples,
       output_format: 'png',
     }),
