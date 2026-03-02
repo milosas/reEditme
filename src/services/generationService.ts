@@ -82,7 +82,8 @@ export async function generateImages(
         throw new Error('AVATAR_LOAD_FAILED');
       }
     } else {
-      avatarImageUrl = config.avatar.imageUrl;
+      // Use high-res fullImageUrl for FASHN (needs 512px+ for body pose detection)
+      avatarImageUrl = config.avatar.fullImageUrl || config.avatar.imageUrl;
     }
   }
 

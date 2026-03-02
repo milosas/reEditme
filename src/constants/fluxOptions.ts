@@ -1,6 +1,8 @@
 import type { ImageCountOption, Avatar, Scene, QualityModeOption, GarmentPhotoTypeOption } from '../types';
 
 // Avatar options with reference images (Unsplash free photos)
+// imageUrl = small thumbnail for UI display
+// fullImageUrl = high-res version sent to FASHN for body pose detection (needs 512px+)
 export const AVATARS: Avatar[] = [
   // Female avatars - Full body (3)
   {
@@ -8,6 +10,7 @@ export const AVATARS: Avatar[] = [
     name: 'Mados modelis',
     description: 'Pilnas kūnas, stilinga poza',
     imageUrl: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=200&h=300&fit=crop',
+    fullImageUrl: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=768&h=1024&fit=crop',
     promptDescription: 'fashion model woman, full body, stylish pose'
   },
   {
@@ -15,6 +18,7 @@ export const AVATARS: Avatar[] = [
     name: 'Elegantiška moteris',
     description: 'Pilnas kūnas, elegantiškas stilius',
     imageUrl: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=200&h=300&fit=crop',
+    fullImageUrl: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=768&h=1024&fit=crop',
     promptDescription: 'elegant woman, full body, sophisticated style'
   },
   {
@@ -22,6 +26,7 @@ export const AVATARS: Avatar[] = [
     name: 'Kasdienis stilius',
     description: 'Pilnas kūnas, atsipalaidavusi',
     imageUrl: 'https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?w=200&h=300&fit=crop',
+    fullImageUrl: 'https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?w=768&h=1024&fit=crop',
     promptDescription: 'casual young woman, full body, relaxed pose'
   },
   // Female avatars - Half body (2)
@@ -30,6 +35,7 @@ export const AVATARS: Avatar[] = [
     name: 'Profesionali moteris',
     description: 'Pusė kūno, dalykiškas stilius',
     imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=250&fit=crop',
+    fullImageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=768&h=960&fit=crop',
     promptDescription: 'professional woman, waist up, business attire'
   },
   {
@@ -37,6 +43,7 @@ export const AVATARS: Avatar[] = [
     name: 'Kūrybinga moteris',
     description: 'Pusė kūno, meninė išraiška',
     imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=250&fit=crop',
+    fullImageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=768&h=960&fit=crop',
     promptDescription: 'creative artistic woman, waist up, unique style'
   },
   // Female avatar - Face (1)
@@ -45,6 +52,7 @@ export const AVATARS: Avatar[] = [
     name: 'Portretas moteris',
     description: 'Veido close-up, natūrali grožybė',
     imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face',
+    fullImageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=768&h=768&fit=crop',
     promptDescription: 'beautiful woman, face close-up, natural beauty'
   },
   // Male avatars - Full body (2)
@@ -53,6 +61,7 @@ export const AVATARS: Avatar[] = [
     name: 'Verslo vyras',
     description: 'Pilnas kūnas, profesionalus',
     imageUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&h=300&fit=crop',
+    fullImageUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=768&h=1024&fit=crop',
     promptDescription: 'business man, full body, professional suit'
   },
   {
@@ -60,6 +69,7 @@ export const AVATARS: Avatar[] = [
     name: 'Kasdienis vyras',
     description: 'Pilnas kūnas, atsipalaidavęs',
     imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=300&fit=crop',
+    fullImageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=768&h=1024&fit=crop',
     promptDescription: 'casual man, full body, relaxed style'
   },
   // Male avatars - Half body (2)
@@ -68,6 +78,7 @@ export const AVATARS: Avatar[] = [
     name: 'Sportinis vyras',
     description: 'Pusė kūno, atletiškas',
     imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=250&fit=crop',
+    fullImageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=768&h=960&fit=crop',
     promptDescription: 'athletic man, waist up, fit physique'
   },
   {
@@ -75,6 +86,7 @@ export const AVATARS: Avatar[] = [
     name: 'Stilingas vyras',
     description: 'Pusė kūno, madinga išvaizda',
     imageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=250&fit=crop',
+    fullImageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=768&h=960&fit=crop',
     promptDescription: 'stylish man, waist up, fashionable look'
   }
 ];

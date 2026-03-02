@@ -3,7 +3,8 @@ export interface Avatar {
   id: string;
   name: string;
   description: string;
-  imageUrl: string; // URL to avatar image
+  imageUrl: string; // Small thumbnail for UI display
+  fullImageUrl?: string; // High-res URL for FASHN body pose detection (512px+)
   promptDescription: string; // How to describe in prompt
   isCustom?: boolean; // true for custom avatars
 }
