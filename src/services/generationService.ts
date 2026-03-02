@@ -14,20 +14,36 @@ async function isGuestUser(): Promise<boolean> {
 }
 
 /**
- * Convert File to base64 data URL
+ * Resize image to max dimensions and compress as JPEG to keep payload under Supabase body limit.
+ * Returns base64 data URL.
  */
-function imageToBase64(file: File): Promise<string> {
+const MAX_IMAGE_DIM = 1024;
+const JPEG_QUALITY = 0.85;
+
+function resizeAndCompressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-      } else {
-        reject(new Error('Failed to read file as data URL'));
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > MAX_IMAGE_DIM || height > MAX_IMAGE_DIM) {
+        const scale = MAX_IMAGE_DIM / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
       }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image for compression'));
+    };
+    img.src = url;
   });
 }
 
@@ -64,9 +80,9 @@ export async function generateImages(
   images: UploadedImage[],
   signal: AbortSignal
 ): Promise<GenerationResponse> {
-  // Convert uploaded clothing images to base64
+  // Resize & compress clothing images to keep request under Supabase body limit (~6MB)
   const base64Images = await Promise.all(
-    images.map(img => imageToBase64(img.file))
+    images.map(img => resizeAndCompressImage(img.file))
   );
 
   // For custom avatars, convert image URL to base64 (Edge Function can't access signed URLs)
