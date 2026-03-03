@@ -5,7 +5,7 @@ export type GenerationProgress =
   | 'generating-3'
   | 'complete';
 
-export type ErrorType = 'TIMEOUT' | 'NETWORK' | 'API_ERROR' | 'AVATAR_LOAD_FAILED' | 'INSUFFICIENT_CREDITS';
+export type ErrorType = 'TIMEOUT' | 'NETWORK' | 'API_ERROR' | 'AVATAR_LOAD_FAILED' | 'BODY_POSE_ERROR' | 'INSUFFICIENT_CREDITS';
 
 export interface GeneratedImage {
   url: string;

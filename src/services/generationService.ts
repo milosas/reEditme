@@ -151,8 +151,12 @@ export async function generateImages(
       if (errorData.error?.includes('AVATAR_UPLOAD_FAILED')) {
         throw new Error('AVATAR_LOAD_FAILED');
       }
+      const errorText = errorData.error || errorData.message || '';
+      if (errorText.toLowerCase().includes('body pose') || errorText.toLowerCase().includes('detect')) {
+        throw new Error('BODY_POSE_ERROR');
+      }
     } catch (parseErr) {
-      if ((parseErr as Error).message?.startsWith('INSUFFICIENT_CREDITS') || (parseErr as Error).message === 'AVATAR_LOAD_FAILED') {
+      if ((parseErr as Error).message?.startsWith('INSUFFICIENT_CREDITS') || (parseErr as Error).message === 'AVATAR_LOAD_FAILED' || (parseErr as Error).message === 'BODY_POSE_ERROR') {
         throw parseErr;
       }
       // If parsing fails, throw generic error

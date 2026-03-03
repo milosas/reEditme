@@ -165,6 +165,8 @@ export function useGeneration() {
           required: parseInt(parts[1], 10) || 0,
           balance: parseInt(parts[2], 10) || 0,
         });
+      } else if (error.message === 'BODY_POSE_ERROR') {
+        errorType = 'BODY_POSE_ERROR';
       } else if (error.message === 'API_ERROR') {
         errorType = 'API_ERROR';
       } else if (error.message === 'AVATAR_LOAD_FAILED') {

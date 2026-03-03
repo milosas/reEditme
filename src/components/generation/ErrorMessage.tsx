@@ -21,6 +21,8 @@ export function ErrorMessage({ errorType, onDismiss }: ErrorMessageProps) {
         return t.errors.api;
       case 'AVATAR_LOAD_FAILED':
         return t.errors.avatarLoad || t.errors.default;
+      case 'BODY_POSE_ERROR':
+        return t.errors.bodyPose || t.errors.default;
       case 'INSUFFICIENT_CREDITS':
         return t.errors.insufficientCredits || 'Nepakanka kreditų. Papildykite kreditų balansą.';
       default:
@@ -28,11 +30,12 @@ export function ErrorMessage({ errorType, onDismiss }: ErrorMessageProps) {
     }
   };
 
-  // Auto-dismiss after 3 seconds
+  // Auto-dismiss (longer for detailed errors like body pose)
+  const dismissDelay = errorType === 'BODY_POSE_ERROR' ? 8000 : 3000;
   useEffect(() => {
     const timer = setTimeout(() => {
       onDismiss();
-    }, 3000);
+    }, dismissDelay);
 
     return () => clearTimeout(timer);
   }, [onDismiss]);
