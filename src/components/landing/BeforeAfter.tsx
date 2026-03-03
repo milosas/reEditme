@@ -3,32 +3,32 @@ import { motion } from 'framer-motion';
 const EXAMPLES = [
   {
     before: {
-      img: '/images/before-after/before1.jpg',
-      label: 'Paprasta asmeninė nuotrauka',
-    },
-    after: {
-      img: '/images/before-after/after1.jpg',
-      label: 'Profesionalus verslo portretas',
-    },
-  },
-  {
-    before: {
       img: '/images/before-after/before2.jpg',
-      label: 'Kasdienė nuotrauka',
+      label: 'Rožinis paltas',
     },
     after: {
       img: '/images/before-after/after2.jpg',
-      label: 'Korporatyvinė nuotrauka',
+      label: 'Dryžuotas megztinis',
     },
   },
   {
     before: {
       img: '/images/before-after/before3.jpg',
-      label: 'Paprasta selfie',
+      label: 'Juodas paltas',
     },
     after: {
       img: '/images/before-after/after3.jpg',
-      label: 'AI sugeneruotas profesionalus portretas',
+      label: 'Odinė striukė',
+    },
+  },
+  {
+    before: {
+      img: '/images/before-after/before1.jpg',
+      label: 'Crop top',
+    },
+    after: {
+      img: '/images/before-after/after1.jpg',
+      label: 'Juodi marškinėliai',
     },
   },
 ];
@@ -45,13 +45,13 @@ export function BeforeAfter() {
           className="text-center mb-14"
         >
           <p className="text-sm font-semibold text-[#FF6B35] uppercase tracking-wide mb-2">
-            AI transformacijos
+            AI virtualus matavimasis
           </p>
           <h2 className="text-3xl md:text-4xl font-bold text-[#1A1A1A] mb-3">
             Pamatykite skirtumą
           </h2>
           <p className="text-[#666666] max-w-xl mx-auto">
-            Nuo paprastų nuotraukų iki profesionalaus turinio per kelias sekundes
+            Įkelkite nuotrauką ir pakeiskite drabužius per kelias sekundes su AI
           </p>
         </motion.div>
 
