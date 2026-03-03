@@ -17,8 +17,8 @@ async function isGuestUser(): Promise<boolean> {
  * Resize image to max dimensions and compress as JPEG to keep payload under Supabase body limit.
  * Returns base64 data URL.
  */
-const MAX_IMAGE_DIM = 1024;
-const JPEG_QUALITY = 0.85;
+const MAX_IMAGE_DIM = 1536;
+const JPEG_QUALITY = 0.92;
 
 function resizeAndCompressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -48,26 +48,39 @@ function resizeAndCompressImage(file: File): Promise<string> {
 }
 
 /**
- * Fetch image URL and convert to base64 data URL
- * Used for custom avatars where Edge Function can't access signed URLs
+ * Fetch image URL, resize to max dimensions and compress as JPEG.
+ * Used for custom avatars where Edge Function can't access signed URLs.
+ * Prevents oversized request bodies that cause Supabase PARSE_ERROR.
  */
-async function urlToBase64(imageUrl: string): Promise<string> {
+async function urlToCompressedBase64(imageUrl: string): Promise<string> {
   const response = await fetch(imageUrl);
   if (!response.ok) {
     throw new Error(`Failed to fetch image: ${response.status}`);
   }
   const blob = await response.blob();
+  const bitmapUrl = URL.createObjectURL(blob);
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-      } else {
-        reject(new Error('Failed to convert blob to data URL'));
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(bitmapUrl);
+      let { width, height } = img;
+      if (width > MAX_IMAGE_DIM || height > MAX_IMAGE_DIM) {
+        const scale = MAX_IMAGE_DIM / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
       }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
+    img.onerror = () => {
+      URL.revokeObjectURL(bitmapUrl);
+      reject(new Error('Failed to load image for compression'));
+    };
+    img.src = bitmapUrl;
   });
 }
 
@@ -93,7 +106,7 @@ export async function generateImages(
   if (config.avatar?.imageUrl) {
     if (config.avatar.isCustom) {
       try {
-        avatarImageBase64 = await urlToBase64(config.avatar.imageUrl);
+        avatarImageBase64 = await urlToCompressedBase64(config.avatar.imageUrl);
       } catch (err) {
         throw new Error('AVATAR_LOAD_FAILED');
       }
