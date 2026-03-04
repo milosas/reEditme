@@ -178,12 +178,68 @@ export const DEFAULT_TRAITS: AvatarTraits = {
 };
 
 /**
- * Build avatar prompt — FLUX.2 best practices:
- * - Subject first (FLUX weights early words most)
- * - 30-50 words max (longer = ignored)
- * - No "portrait" with "full body" (conflicts)
- * - Technical camera terms trigger photorealism training data
- * - No negative prompts (describe what you WANT)
+ * Infer material description from special features text.
+ * Controls light-material interaction in FLUX (madeOutOf field).
+ */
+function inferMaterial(specialFeatures: string): string {
+  const lower = specialFeatures.toLowerCase();
+  if (lower.includes('leather')) return 'leather material, smooth grain texture';
+  if (lower.includes('silk') || lower.includes('satin')) return 'silk fabric, smooth reflective sheen';
+  if (lower.includes('denim') || lower.includes('jeans')) return 'denim fabric, matte cotton weave';
+  if (lower.includes('wool') || lower.includes('knit')) return 'wool knit fabric, soft texture';
+  if (lower.includes('linen')) return 'linen fabric, natural fiber texture';
+  if (lower.includes('suit') || lower.includes('formal')) return 'tailored wool fabric, crisp finish';
+  if (lower.includes('sport') || lower.includes('athletic')) return 'athletic fabric, moisture-wicking texture';
+  return 'cotton fabric, soft natural texture';
+}
+
+/**
+ * Convert structured JSON prompt fields → optimized FLUX text prompt.
+ * Order: framing → subject → hair → pose → expression → madeOutOf → camera → lighting → background → colorRestriction (LAST = strongest)
+ */
+function jsonToFluxPrompt(json: {
+  framing: string;
+  subject: string[];
+  hair: string;
+  pose: string;
+  expression: string;
+  madeOutOf: string;
+  camera: { lens: string; aperture: string };
+  lighting: string;
+  background: string;
+  extras?: string;
+  colorRestriction: string;
+}): string {
+  const subjectStr = json.subject.join(' ');
+  const opening = json.hair
+    ? `${json.framing} of a ${subjectStr} with ${json.hair}`
+    : `${json.framing} of ${subjectStr}`;
+
+  const parts = [
+    opening,
+    `${json.pose}, ${json.expression}`,
+    json.madeOutOf,
+  ];
+
+  if (json.extras) {
+    parts.push(json.extras);
+  }
+
+  parts.push(`shot on ${json.camera.lens} ${json.camera.aperture}`);
+  parts.push(json.lighting);
+  parts.push(json.background);
+  parts.push(json.colorRestriction);
+
+  return parts.join(', ');
+}
+
+/**
+ * Build avatar prompt — JSON-structured Nano Banana best practices:
+ * - Subject as list → each trait weighted separately
+ * - colorRestriction LAST → strongest constraint position for FLUX
+ * - madeOutOf → controls light-material interaction
+ * - Camera with aperture → triggers photorealism training data
+ * - 30-50 words max
  */
 export function buildAvatarPrompt(traits: AvatarTraits, specialFeatures: string, lang: Lang = 'en'): string {
   const age = getPrompt(AGE_OPTIONS.find(o => o.id === traits.age), lang);
@@ -198,28 +254,27 @@ export function buildAvatarPrompt(traits: AvatarTraits, specialFeatures: string,
   const background = getPrompt(BACKGROUND_OPTIONS.find(o => o.id === traits.background) || BACKGROUND_OPTIONS[0], lang);
   const colorPalette = getPrompt(COLOR_PALETTE_OPTIONS.find(o => o.id === traits.colorPalette) || COLOR_PALETTE_OPTIONS[0], lang);
 
-  // "bald" doesn't need color
   const hair = traits.hairLength === 'bald' ? 'bald head' : `${hairLength} ${hairColor} hair`;
 
-  // Structure: Subject → Action → Style (30-50 words for FLUX)
-  const parts = [
-    `${framing} of a ${age} ${ethnicity} ${gender} with ${hair}`,
-    `${pose}, ${mood}`,
-    colorPalette,
-  ];
-
-  if (specialFeatures.trim()) {
-    parts.push(specialFeatures.trim());
-  }
-
-  parts.push(`shot on 85mm lens, ${lighting}, ${background}`);
-
-  return parts.join(', ');
+  return jsonToFluxPrompt({
+    framing,
+    subject: [age, ethnicity, gender],
+    hair,
+    pose,
+    expression: mood,
+    madeOutOf: inferMaterial(specialFeatures),
+    camera: { lens: '85mm', aperture: 'f/2.0' },
+    lighting,
+    background,
+    extras: specialFeatures.trim() || undefined,
+    colorRestriction: `${colorPalette} — no clashing tones`,
+  });
 }
 
 /**
  * Build prompt for additional photo of existing model.
- * Identity comes from InstantID face reference.
+ * Identity comes from PuLID face reference.
+ * Uses same JSON-structured approach with colorRestriction last.
  */
 export function buildPosePrompt(
   _baseDescription: string,
@@ -239,18 +294,19 @@ export function buildPosePrompt(
   const backgroundVal = getPrompt(BACKGROUND_OPTIONS.find(o => o.id === background) || BACKGROUND_OPTIONS[0], lang);
   const colorPaletteVal = getPrompt(COLOR_PALETTE_OPTIONS.find(o => o.id === colorPalette) || COLOR_PALETTE_OPTIONS[0], lang);
 
-  const parts = [
-    `same person, ${framingVal}, ${poseVal}, ${moodVal}`,
-    colorPaletteVal,
-  ];
-
-  if (specialFeatures.trim()) {
-    parts.push(specialFeatures.trim());
-  }
-
-  parts.push(`shot on 85mm lens, ${lightingVal}, ${backgroundVal}`);
-
-  return parts.join(', ');
+  return jsonToFluxPrompt({
+    framing: framingVal,
+    subject: ['same person'],
+    hair: '',
+    pose: poseVal,
+    expression: moodVal,
+    madeOutOf: inferMaterial(specialFeatures),
+    camera: { lens: '85mm', aperture: 'f/2.0' },
+    lighting: lightingVal,
+    background: backgroundVal,
+    extras: specialFeatures.trim() || undefined,
+    colorRestriction: `${colorPaletteVal} — no clashing tones`,
+  });
 }
 
 export function buildTraitDescription(traits: AvatarTraits, lang: Lang): string {

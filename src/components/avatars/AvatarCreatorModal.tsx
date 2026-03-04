@@ -20,7 +20,13 @@ import {
 import type { TraitOption } from '../../constants/avatarTraits';
 import type { Language } from '../../i18n/translations';
 
-const BATCH_POSES = ['standing-front', 'standing-side', 'walking', 'arms-crossed', 'hand-on-hip'];
+const BATCH_CONFIGS = [
+  { pose: 'standing-front', framing: 'full-body' },
+  { pose: 'standing-side', framing: 'half-body' },
+  { pose: 'walking', framing: 'full-body' },
+  { pose: 'arms-crossed', framing: 'half-body' },
+  { pose: 'hand-on-hip', framing: 'headshot' },
+];
 
 interface AvatarCreatorModalProps {
   isOpen: boolean;
@@ -92,6 +98,7 @@ export function AvatarCreatorModal({ isOpen, onClose, targetModelId, onSaved, mo
     setGeneratedImage,
     clearImage,
     reset,
+    setPoseMode,
   } = useAvatarCreator(language);
 
   const tc = t.avatarCreator;
@@ -228,9 +235,10 @@ export function AvatarCreatorModal({ isOpen, onClose, targetModelId, onSaved, mo
     for (let i = 0; i < batchCount; i++) {
       setBatchProgress(i + 1);
 
-      // Set pose for this iteration
-      const poseId = BATCH_POSES[i % BATCH_POSES.length];
-      setTrait('pose', poseId);
+      // Set pose and framing for this iteration
+      const config = BATCH_CONFIGS[i % BATCH_CONFIGS.length];
+      setTrait('pose', config.pose);
+      setTrait('framing', config.framing);
 
       // Small delay to let prompt rebuild
       await new Promise(r => setTimeout(r, 150));
@@ -261,8 +269,8 @@ export function AvatarCreatorModal({ isOpen, onClose, targetModelId, onSaved, mo
     setError(null);
     try {
       let modelId = effectiveModelId;
+      const description = batchResults[0]?.description || '';
       if (!modelId) {
-        const description = batchResults[0]?.description || '';
         const name = newModelName.trim() || description.substring(0, 40);
         const model = await createModel(name);
         if (!model) throw new Error('Failed to create model');
@@ -271,16 +279,28 @@ export function AvatarCreatorModal({ isOpen, onClose, targetModelId, onSaved, mo
         setSelectedModelId(model.id);
       }
 
+      let firstPhotoUrl: string | undefined;
       for (const result of batchResults) {
-        await addGeneratedPhotoToModel(modelId, result.base64, result.description);
+        const photo = await addGeneratedPhotoToModel(modelId, result.base64, result.description);
+        if (!firstPhotoUrl && photo?.image_url) {
+          firstPhotoUrl = photo.image_url;
+        }
       }
 
       await onSaved?.();
-      handleClose();
+
+      // Switch to pose mode instead of closing
+      setCreatedModelId(modelId);
+      setSelectedModelId(modelId);
+      setModelBaseDescription(description);
+      setIsPoseMode(true);
+      setPoseMode(description, firstPhotoUrl);
+      setBatchResults([]);
+      clearImage();
+      setIsSaving(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save';
       setError(message);
-    } finally {
       setIsSaving(false);
     }
   };
@@ -320,9 +340,17 @@ export function AvatarCreatorModal({ isOpen, onClose, targetModelId, onSaved, mo
         modelId = model.id;
       }
 
-      await addGeneratedPhotoToModel(modelId, generatedImage, description);
+      const photo = await addGeneratedPhotoToModel(modelId, generatedImage, description);
       await onSaved?.();
-      handleClose();
+
+      // Switch to pose mode instead of closing
+      setCreatedModelId(modelId);
+      setSelectedModelId(modelId);
+      setModelBaseDescription(description);
+      setIsPoseMode(true);
+      setPoseMode(description, photo?.image_url);
+      clearImage();
+      setIsSaving(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save model';
       setError(message);

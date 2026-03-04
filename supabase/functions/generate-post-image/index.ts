@@ -146,7 +146,8 @@ serve(async (req) => {
       }
     }
 
-    const imagePrompt = `${body.prompt}, ${style.color}, ${style.lighting} lighting, ${style.material}, professional social media post, clean composition`
+    // JSON-structured prompt: subject first, colorRestriction last (strongest weight in FLUX)
+    const imagePrompt = `${body.prompt}, ${style.lighting} lighting, ${style.material}, clean composition, professional social media post, ${style.color} — no clashing or oversaturated tones`
 
     console.log('Generating post image with FLUX 2 Pro:', imagePrompt.substring(0, 100))
 
