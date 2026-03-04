@@ -111,7 +111,42 @@ serve(async (req) => {
       )
     }
 
-    const imagePrompt = `${body.prompt} for ${body.industry} business, professional, high-quality, social media post image, modern aesthetic, clean composition`
+    const industryStyles: Record<string, { color: string; lighting: string; material: string }> = {
+      'e-komerc':     { color: 'clean vibrant product colors', lighting: 'bright even studio', material: 'smooth packaging and fabric' },
+      'grožio':       { color: 'soft pastel palette', lighting: 'diffused golden', material: 'dewy skin texture' },
+      'trener':       { color: 'high contrast dark tones', lighting: 'dramatic rim light', material: 'sweat and steel' },
+      'kineziterapeut': { color: 'calm blue-green tones', lighting: 'soft natural', material: 'medical and wellness' },
+      'odontolog':    { color: 'clean white and blue tones', lighting: 'bright clinical', material: 'glossy dental surfaces' },
+      'veterinar':    { color: 'warm friendly tones', lighting: 'soft natural', material: 'fur and paw textures' },
+      'psicholog':    { color: 'muted calming pastels', lighting: 'soft ambient', material: 'cozy interior textures' },
+      'nekilnojam':   { color: 'warm inviting neutrals', lighting: 'golden hour', material: 'wood and stone' },
+      'fotograf':     { color: 'muted film tones', lighting: 'natural side-lit', material: 'matte print texture' },
+      'buhalter':     { color: 'professional navy and white', lighting: 'clean office', material: 'paper and glass' },
+      'teisinink':    { color: 'dark formal tones', lighting: 'warm ambient', material: 'leather and wood' },
+      'auto':         { color: 'deep metallic tones', lighting: 'dramatic spot light', material: 'glossy paint and chrome' },
+      'restoran':     { color: 'warm appetizing tones', lighting: 'overhead natural', material: 'glossy ceramic and wood' },
+      'kavin':        { color: 'warm brown and cream', lighting: 'cozy ambient', material: 'ceramic cups and pastry' },
+      'statyb':       { color: 'industrial earth tones', lighting: 'bright daylight', material: 'concrete and steel' },
+      'santech':      { color: 'clean blue and silver', lighting: 'bright functional', material: 'pipes and metal fittings' },
+      'elektrik':     { color: 'safety yellow and grey', lighting: 'focused work light', material: 'cables and circuit boards' },
+      'programuot':   { color: 'dark mode blue-purple', lighting: 'screen glow ambient', material: 'sleek tech surfaces' },
+      'dizainer':     { color: 'creative vibrant accents', lighting: 'bright studio', material: 'textured art surfaces' },
+      'konditer':     { color: 'sweet pastel palette', lighting: 'soft overhead natural', material: 'frosting and sprinkles' },
+      'korepetitor':  { color: 'warm friendly tones', lighting: 'bright classroom', material: 'books and stationery' },
+      'valym':        { color: 'fresh green and white', lighting: 'bright clean', material: 'sparkling surfaces' },
+    }
+
+    // Match industry to style by keyword prefix
+    const industryLower = (body.industry || '').toLowerCase()
+    let style = { color: 'natural balanced tones', lighting: 'soft studio', material: 'clean surfaces' }
+    for (const [key, s] of Object.entries(industryStyles)) {
+      if (industryLower.includes(key)) {
+        style = s
+        break
+      }
+    }
+
+    const imagePrompt = `${body.prompt}, ${style.color}, ${style.lighting} lighting, ${style.material}, professional social media post, clean composition`
 
     console.log('Generating post image with FLUX 2 Pro:', imagePrompt.substring(0, 100))
 

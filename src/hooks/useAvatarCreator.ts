@@ -53,7 +53,7 @@ export function useAvatarCreator(lang: Language = 'en'): UseAvatarCreatorReturn 
 
   const rebuildPrompt = useCallback((updatedTraits: AvatarTraits, updatedFeatures: string, base: string | null) => {
     if (base) {
-      setPrompt(buildPosePrompt(base, updatedTraits.pose, updatedTraits.mood, updatedTraits.framing, updatedFeatures, lang));
+      setPrompt(buildPosePrompt(base, updatedTraits.pose, updatedTraits.mood, updatedTraits.framing, updatedFeatures, lang, updatedTraits.lighting, updatedTraits.background, updatedTraits.colorPalette));
     } else {
       setPrompt(buildAvatarPrompt(updatedTraits, updatedFeatures, lang));
     }
@@ -79,7 +79,7 @@ export function useAvatarCreator(lang: Language = 'en'): UseAvatarCreatorReturn 
     try {
       // Always send English prompt to fal.ai for better results
       const englishPrompt = baseDescription
-        ? buildPosePrompt(baseDescription, traits.pose, traits.mood, traits.framing, specialFeatures, 'en')
+        ? buildPosePrompt(baseDescription, traits.pose, traits.mood, traits.framing, specialFeatures, 'en', traits.lighting, traits.background, traits.colorPalette)
         : buildAvatarPrompt(traits, specialFeatures, 'en');
 
       const refUrl = overrideReferenceUrl || referenceImageUrl;
@@ -130,7 +130,7 @@ export function useAvatarCreator(lang: Language = 'en'): UseAvatarCreatorReturn 
   const setPoseMode = useCallback((description: string, referenceUrl?: string) => {
     setBaseDescription(description);
     if (referenceUrl) setReferenceImageUrl(referenceUrl);
-    setPrompt(buildPosePrompt(description, traits.pose, traits.mood, traits.framing, specialFeatures, lang));
+    setPrompt(buildPosePrompt(description, traits.pose, traits.mood, traits.framing, specialFeatures, lang, traits.lighting, traits.background, traits.colorPalette));
   }, [traits, specialFeatures, lang]);
 
   const reset = useCallback(() => {

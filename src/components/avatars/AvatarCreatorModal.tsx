@@ -12,6 +12,9 @@ import {
   FRAMING_OPTIONS,
   POSE_OPTIONS,
   MOOD_OPTIONS,
+  LIGHTING_OPTIONS,
+  BACKGROUND_OPTIONS,
+  COLOR_PALETTE_OPTIONS,
   buildTraitDescription,
 } from '../../constants/avatarTraits';
 import type { TraitOption } from '../../constants/avatarTraits';
@@ -649,6 +652,33 @@ export function AvatarCreatorModal({ isOpen, onClose, targetModelId, onSaved, mo
                 value={traits.framing}
                 onChange={(v) => setTrait('framing', v)}
                 lang={language}
+              />
+
+              <TraitSelector
+                label={tc.lighting || 'Lighting'}
+                options={LIGHTING_OPTIONS}
+                value={traits.lighting}
+                onChange={(v) => setTrait('lighting', v)}
+                lang={language}
+                compact
+              />
+
+              <TraitSelector
+                label={tc.background || 'Background'}
+                options={BACKGROUND_OPTIONS}
+                value={traits.background}
+                onChange={(v) => setTrait('background', v)}
+                lang={language}
+                compact
+              />
+
+              <TraitSelector
+                label={tc.colorPalette || 'Color palette'}
+                options={COLOR_PALETTE_OPTIONS}
+                value={traits.colorPalette}
+                onChange={(v) => setTrait('colorPalette', v)}
+                lang={language}
+                compact
               />
 
               {/* Special features */}

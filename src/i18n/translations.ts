@@ -167,6 +167,9 @@ export const translations = {
       saving: 'Saugoma...',
       cancel: 'Atšaukti',
       framing: 'Kadravimas',
+      lighting: 'Apšvietimas',
+      background: 'Fonas',
+      colorPalette: 'Spalvų paletė',
     },
     avatarModels: {
       myModels: 'Mano modeliai',
@@ -858,6 +861,9 @@ export const translations = {
       saving: 'Saglabā...',
       cancel: 'Atcelt',
       framing: 'Kadrējums',
+      lighting: 'Apgaismojums',
+      background: 'Fons',
+      colorPalette: 'Krāsu palete',
     },
     avatarModels: {
       myModels: 'Mani modeļi',
@@ -1548,6 +1554,9 @@ export const translations = {
       saving: 'Salvestamine...',
       cancel: 'Tühista',
       framing: 'Kadreerimine',
+      lighting: 'Valgustus',
+      background: 'Taust',
+      colorPalette: 'Värvipalett',
     },
     avatarModels: {
       myModels: 'Minu mudelid',
@@ -2238,6 +2247,9 @@ export const translations = {
       saving: 'Saving...',
       cancel: 'Cancel',
       framing: 'Framing',
+      lighting: 'Lighting',
+      background: 'Background',
+      colorPalette: 'Color palette',
     },
     avatarModels: {
       myModels: 'My models',

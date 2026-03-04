@@ -77,6 +77,32 @@ export const HAIR_COLOR_OPTIONS: TraitOption[] = [
   { id: 'red', promptValue: 'red', labels: { lt: 'Raudoni', lv: 'Sarkani', ee: 'Punased', en: 'Red' } },
 ];
 
+// === STYLE TRAITS (lighting, background, color) ===
+
+export const LIGHTING_OPTIONS: TraitOption[] = [
+  { id: 'studio-soft', promptValue: 'soft diffused studio lighting', labels: { lt: 'Studijinė', lv: 'Studijas', ee: 'Stuudio', en: 'Studio soft' } },
+  { id: 'rim-light', promptValue: 'dramatic rim lighting from behind', labels: { lt: 'Kontūrinė', lv: 'Kontūru', ee: 'Kontuur', en: 'Rim light' } },
+  { id: 'side-lit', promptValue: 'side-lit with strong shadows', labels: { lt: 'Šoninė', lv: 'Sānu', ee: 'Külgmine', en: 'Side lit' } },
+  { id: 'golden-hour', promptValue: 'golden hour warm sunlight', labels: { lt: 'Auksinė', lv: 'Zelta', ee: 'Kuldne', en: 'Golden hour' } },
+  { id: 'overcast', promptValue: 'soft overcast natural light', labels: { lt: 'Natūrali', lv: 'Dabiskā', ee: 'Looduslik', en: 'Overcast' } },
+];
+
+export const BACKGROUND_OPTIONS: TraitOption[] = [
+  { id: 'neutral', promptValue: 'neutral gray background', labels: { lt: 'Neutralus', lv: 'Neitrāls', ee: 'Neutraalne', en: 'Neutral' } },
+  { id: 'white', promptValue: 'clean white background', labels: { lt: 'Baltas', lv: 'Balts', ee: 'Valge', en: 'White' } },
+  { id: 'urban', promptValue: 'blurred urban street background', labels: { lt: 'Miesto', lv: 'Pilsētas', ee: 'Linna', en: 'Urban' } },
+  { id: 'nature', promptValue: 'soft bokeh nature background', labels: { lt: 'Gamtos', lv: 'Dabas', ee: 'Loodus', en: 'Nature' } },
+  { id: 'office', promptValue: 'modern office interior background', labels: { lt: 'Biuro', lv: 'Biroja', ee: 'Kontori', en: 'Office' } },
+];
+
+export const COLOR_PALETTE_OPTIONS: TraitOption[] = [
+  { id: 'natural', promptValue: 'natural muted earth tones', labels: { lt: 'Natūrali', lv: 'Dabiskā', ee: 'Looduslik', en: 'Natural' } },
+  { id: 'warm', promptValue: 'warm amber and cream palette', labels: { lt: 'Šilta', lv: 'Silta', ee: 'Soe', en: 'Warm' } },
+  { id: 'cool', promptValue: 'cool blue and silver tones', labels: { lt: 'Šalta', lv: 'Vēsa', ee: 'Jahe', en: 'Cool' } },
+  { id: 'monochrome', promptValue: 'desaturated monochrome palette', labels: { lt: 'Monochrom.', lv: 'Monohroms', ee: 'Monokroom', en: 'Monochrome' } },
+  { id: 'vibrant', promptValue: 'vivid saturated colors', labels: { lt: 'Ryški', lv: 'Spilgta', ee: 'Erksad', en: 'Vibrant' } },
+];
+
 // === VARIABLE TRAITS (change per photo) ===
 
 export const FRAMING_OPTIONS: TraitOption[] = [
@@ -132,6 +158,9 @@ export interface AvatarTraits {
   framing: string;
   pose: string;
   mood: string;
+  lighting: string;
+  background: string;
+  colorPalette: string;
 }
 
 export const DEFAULT_TRAITS: AvatarTraits = {
@@ -143,6 +172,9 @@ export const DEFAULT_TRAITS: AvatarTraits = {
   framing: 'full-body',
   pose: 'standing-front',
   mood: 'neutral',
+  lighting: 'studio-soft',
+  background: 'neutral',
+  colorPalette: 'natural',
 };
 
 /**
@@ -162,31 +194,25 @@ export function buildAvatarPrompt(traits: AvatarTraits, specialFeatures: string,
   const framing = getPrompt(FRAMING_OPTIONS.find(o => o.id === traits.framing), lang);
   const pose = getPrompt(POSE_OPTIONS.find(o => o.id === traits.pose), lang);
   const mood = getPrompt(MOOD_OPTIONS.find(o => o.id === traits.mood), lang);
+  const lighting = getPrompt(LIGHTING_OPTIONS.find(o => o.id === traits.lighting) || LIGHTING_OPTIONS[0], lang);
+  const background = getPrompt(BACKGROUND_OPTIONS.find(o => o.id === traits.background) || BACKGROUND_OPTIONS[0], lang);
+  const colorPalette = getPrompt(COLOR_PALETTE_OPTIONS.find(o => o.id === traits.colorPalette) || COLOR_PALETTE_OPTIONS[0], lang);
 
   // "bald" doesn't need color
   const hair = traits.hairLength === 'bald' ? 'bald head' : `${hairLength} ${hairColor} hair`;
 
-  // Structure: Subject → Action → Style
+  // Structure: Subject → Action → Style (30-50 words for FLUX)
   const parts = [
     `${framing} of a ${age} ${ethnicity} ${gender} with ${hair}`,
     `${pose}, ${mood}`,
+    colorPalette,
   ];
 
   if (specialFeatures.trim()) {
     parts.push(specialFeatures.trim());
   }
 
-  // Technical suffix — EN uses camera terms, others use generic
-  if (lang === 'en') {
-    parts.push('shot on 85mm lens, soft studio lighting, neutral background');
-  } else {
-    const suffixes: Record<string, string> = {
-      lt: 'studijinis apšvietimas, neutralus fonas',
-      lv: 'studijas apgaismojums, neitrāls fons',
-      ee: 'stuudiovalgus, neutraalne taust',
-    };
-    parts.push(suffixes[lang] || suffixes.lt);
-  }
+  parts.push(`shot on 85mm lens, ${lighting}, ${background}`);
 
   return parts.join(', ');
 }
@@ -202,29 +228,27 @@ export function buildPosePrompt(
   framing: string,
   specialFeatures: string,
   lang: Lang = 'en',
+  lighting: string = 'studio-soft',
+  background: string = 'neutral',
+  colorPalette: string = 'natural',
 ): string {
   const framingVal = getPrompt(FRAMING_OPTIONS.find(o => o.id === framing), lang);
   const poseVal = getPrompt(POSE_OPTIONS.find(o => o.id === pose), lang);
   const moodVal = getPrompt(MOOD_OPTIONS.find(o => o.id === mood), lang);
+  const lightingVal = getPrompt(LIGHTING_OPTIONS.find(o => o.id === lighting) || LIGHTING_OPTIONS[0], lang);
+  const backgroundVal = getPrompt(BACKGROUND_OPTIONS.find(o => o.id === background) || BACKGROUND_OPTIONS[0], lang);
+  const colorPaletteVal = getPrompt(COLOR_PALETTE_OPTIONS.find(o => o.id === colorPalette) || COLOR_PALETTE_OPTIONS[0], lang);
 
   const parts = [
     `same person, ${framingVal}, ${poseVal}, ${moodVal}`,
+    colorPaletteVal,
   ];
 
   if (specialFeatures.trim()) {
     parts.push(specialFeatures.trim());
   }
 
-  if (lang === 'en') {
-    parts.push('shot on 85mm lens, soft studio lighting, neutral background');
-  } else {
-    const suffixes: Record<string, string> = {
-      lt: 'studijinis apšvietimas, neutralus fonas',
-      lv: 'studijas apgaismojums, neitrāls fons',
-      ee: 'stuudiovalgus, neutraalne taust',
-    };
-    parts.push(suffixes[lang] || suffixes.lt);
-  }
+  parts.push(`shot on 85mm lens, ${lightingVal}, ${backgroundVal}`);
 
   return parts.join(', ');
 }
