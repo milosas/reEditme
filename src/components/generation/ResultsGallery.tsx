@@ -47,6 +47,7 @@ export function ResultsGallery({ images, selectedIndex, onSelectImage }: Results
               className={`w-full h-auto rounded-lg cursor-pointer transition-all hover:scale-[1.02] ${
                 selectedIndex === index ? 'ring-3 ring-[#FF6B35] ring-offset-2' : ''
               }`}
+              loading="lazy"
               onClick={() => handleClick(index)}
             />
 
@@ -97,22 +98,6 @@ export function ResultsGallery({ images, selectedIndex, onSelectImage }: Results
         slides={slides}
       />
 
-      {/* CSS for fade-in animation */}
-      <style>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.5s ease-out;
-        }
-      `}</style>
     </>
   );
 }

@@ -75,6 +75,8 @@ export function BeforeAfter() {
                     <img
                       src={example.before.img}
                       alt={example.before.label}
+                      width={400}
+                      height={400}
                       className="w-full h-full object-cover grayscale-[30%] brightness-95"
                       loading="lazy"
                     />
@@ -89,6 +91,8 @@ export function BeforeAfter() {
                     <img
                       src={example.after.img}
                       alt={example.after.label}
+                      width={400}
+                      height={400}
                       className="w-full h-full object-cover"
                       loading="lazy"
                     />

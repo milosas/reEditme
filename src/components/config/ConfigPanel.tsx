@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../hooks/useToast';
 import { AVATARS, QUALITY_MODES } from '../../constants/fluxOptions';
 import type { Avatar, QualityModeOption, Config } from '../../types';
 import { useAvatarModels } from '../../hooks/useAvatarModels';
@@ -14,6 +15,7 @@ interface ConfigPanelProps {
 
 export function ConfigPanel({ config, onConfigChange }: ConfigPanelProps) {
   const { t } = useLanguage();
+  const { showToast } = useToast();
   const { user } = useAuth();
   const { models, createModel, addPhotoToModel, addGeneratedPhotoToModel, deletePhoto } = useAvatarModels();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,12 +52,12 @@ export function ConfigPanel({ config, onConfigChange }: ConfigPanelProps) {
     if (!file || !addPhotoTargetModelId) return;
 
     if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      alert('Only JPEG and PNG files are allowed');
+      showToast('Tik JPEG ir PNG failai leidžiami', 'error');
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      showToast('Failo dydis turi būti mažesnis nei 10MB', 'error');
       return;
     }
 
@@ -64,7 +66,7 @@ export function ConfigPanel({ config, onConfigChange }: ConfigPanelProps) {
     } catch (error) {
       console.error('Failed to add photo:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to add photo: ${errorMessage}`);
+      showToast(`Nepavyko pridėti nuotraukos: ${errorMessage}`, 'error');
     }
 
     e.target.value = '';
@@ -84,7 +86,7 @@ export function ConfigPanel({ config, onConfigChange }: ConfigPanelProps) {
     } catch (error) {
       console.error('Failed to create model:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to create model: ${errorMessage}`);
+      showToast(`Nepavyko sukurti modelio: ${errorMessage}`, 'error');
     } finally {
       setCreatingModel(false);
     }
@@ -99,12 +101,12 @@ export function ConfigPanel({ config, onConfigChange }: ConfigPanelProps) {
     if (!file) return;
 
     if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      alert('Only JPEG and PNG files are allowed');
+      showToast('Tik JPEG ir PNG failai leidžiami', 'error');
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      showToast('Failo dydis turi būti mažesnis nei 10MB', 'error');
       return;
     }
 
@@ -120,7 +122,7 @@ export function ConfigPanel({ config, onConfigChange }: ConfigPanelProps) {
     } catch (error) {
       console.error('Failed to create model:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to create model: ${errorMessage}`);
+      showToast(`Nepavyko sukurti modelio: ${errorMessage}`, 'error');
     } finally {
       setCreatingModel(false);
     }

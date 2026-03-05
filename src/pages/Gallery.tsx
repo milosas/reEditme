@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, memo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useGallery } from '../hooks/useGallery';
@@ -6,377 +6,24 @@ import { usePostProcess } from '../hooks/usePostProcess';
 import { useSupabaseStorage } from '../hooks/useSupabaseStorage';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useToast } from '../hooks/useToast';
 import { GalleryGrid } from '../components/gallery/GalleryGrid';
 import { GalleryLightbox } from '../components/gallery/GalleryLightbox';
 import { EmptyState } from '../components/gallery/EmptyState';
+import { SectionHeader } from '../components/gallery/SectionHeader';
+import { GalleryModelCard } from '../components/gallery/GalleryModelCard';
+import { PostCard } from '../components/gallery/PostCard';
+import { ModelDetailModal } from '../components/gallery/ModelDetailModal';
+import { PaginationControls } from '../components/gallery/PaginationControls';
 import { PostProcessToolbar } from '../components/generation/PostProcessToolbar';
 import { LoginModal } from '../components/auth/LoginModal';
-import { formatRelativeTime } from '../utils/date';
 import { Skeleton, SkeletonCard, SkeletonPostCard } from '../components/ui/Skeleton';
-import type { AvatarModel, GeneratedPost } from '../types/database';
-
-const SectionHeader = memo(function SectionHeader({
-  title,
-  count,
-  isOpen,
-  onToggle,
-}: {
-  title: string;
-  count: number;
-  isOpen: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      className="flex items-center gap-3 w-full text-left group py-2"
-    >
-      <h2 className="text-lg font-semibold text-[#1A1A1A]">{title}</h2>
-      <span className="px-2 py-0.5 text-xs font-medium bg-[#F7F7F5] text-[#999999] rounded-full">
-        {count}
-      </span>
-      <svg
-        className={`w-4 h-4 text-[#999999] transition-transform ml-auto ${isOpen ? 'rotate-180' : ''}`}
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    </button>
-  );
-});
-
-const ModelCard = memo(function ModelCard({ model, onClick }: { model: AvatarModel; onClick: () => void }) {
-  const coverPhoto = model.photos?.find(p => p.id === model.cover_photo_id) || model.photos?.[0];
-  const photoCount = model.photos?.length || 0;
-
-  return (
-    <div
-      onClick={onClick}
-      className="group relative rounded-lg overflow-hidden bg-gray-100 cursor-pointer shadow-sm hover:shadow-md transition-all"
-    >
-      {coverPhoto ? (
-        <img
-          src={coverPhoto.image_url}
-          alt={model.name}
-          className="w-full aspect-square object-cover object-top"
-          loading="lazy"
-        />
-      ) : (
-        <div className="w-full aspect-square flex items-center justify-center bg-[#F7F7F5]">
-          <svg className="w-12 h-12 text-[#CCCCCC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-        </div>
-      )}
-
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-      {/* Info bar */}
-      <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/70 to-transparent">
-        <p className="text-white text-sm font-medium truncate">{model.name}</p>
-        <p className="text-white/70 text-xs">
-          {photoCount} {photoCount === 1 ? 'nuotrauka' : 'nuotraukos'}
-        </p>
-      </div>
-    </div>
-  );
-});
-
-const PostCard = memo(function PostCard({
-  post,
-  onDelete,
-  onCopy,
-}: {
-  post: GeneratedPost;
-  onDelete: (id: string) => void;
-  onCopy: (text: string) => void;
-}) {
-  const [confirming, setConfirming] = useState(false);
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirming) {
-      setConfirming(true);
-      setTimeout(() => setConfirming(false), 3000);
-      return;
-    }
-    onDelete(post.id);
-  };
-
-  return (
-    <div className="bg-white border border-[#E5E5E3] rounded-xl overflow-hidden hover:shadow-md transition-all group">
-      {/* Post image */}
-      {post.image_url && (
-        <div className="aspect-[4/5] overflow-hidden bg-gray-100">
-          <img
-            src={post.image_url}
-            alt="Įrašo nuotrauka"
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        </div>
-      )}
-
-      {/* Post text */}
-      <div className="p-3">
-        {post.text && (
-          <p className="text-sm text-[#1A1A1A] line-clamp-3 mb-2 whitespace-pre-wrap">
-            {post.text}
-          </p>
-        )}
-
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-[#999999]">
-            {formatRelativeTime(post.created_at)}
-          </span>
-
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {/* Copy */}
-            {post.text && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onCopy(post.text!); }}
-                className="p-1.5 text-[#999999] hover:text-[#1A1A1A] hover:bg-[#F7F7F5] rounded-md transition-colors"
-                title="Kopijuoti"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </button>
-            )}
-
-            {/* Delete */}
-            <button
-              onClick={handleDelete}
-              className={`p-1.5 rounded-md transition-colors ${
-                confirming
-                  ? 'text-red-500 bg-red-50 hover:bg-red-100'
-                  : 'text-[#999999] hover:text-red-500 hover:bg-[#F7F7F5]'
-              }`}
-              title={confirming ? 'Patvirtinti' : 'Ištrinti'}
-            >
-              {confirming ? (
-                <span className="text-xs font-medium px-1">?</span>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-const ModelDetailModal = memo(function ModelDetailModal({
-  model,
-  onClose,
-  onCreatePost,
-  onDownload,
-  onDelete,
-}: {
-  model: AvatarModel;
-  onClose: () => void;
-  onCreatePost: (imageUrl: string) => void;
-  onDownload: (imageUrl: string, name: string) => void;
-  onDelete: (modelId: string) => void;
-}) {
-  const photos = model.photos || [];
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const selectedPhoto = photos[selectedIndex];
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  const handleDelete = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      setTimeout(() => setConfirmDelete(false), 3000);
-      return;
-    }
-    onDelete(model.id);
-    onClose();
-  };
-
-  return (
-    <>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={onClose} />
-      <div className="fixed inset-4 md:inset-8 lg:inset-16 bg-white rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E5E3]">
-          <div>
-            <h2 className="text-lg font-bold text-[#1A1A1A]">{model.name}</h2>
-            <p className="text-sm text-[#999]">{photos.length} {photos.length === 1 ? 'nuotrauka' : 'nuotraukos'}</p>
-          </div>
-          <button onClick={onClose} className="p-2 text-[#999] hover:text-[#1A1A1A] hover:bg-[#F7F7F5] rounded-lg transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-          {/* Main photo */}
-          <div className="flex-1 flex items-center justify-center p-4 bg-[#F7F7F5] min-h-0">
-            {selectedPhoto ? (
-              <img
-                src={selectedPhoto.image_url}
-                alt={model.name}
-                className="max-w-full max-h-full object-contain rounded-lg"
-              />
-            ) : (
-              <div className="flex flex-col items-center text-[#999]">
-                <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <p className="text-sm">Nėra nuotraukų</p>
-              </div>
-            )}
-          </div>
-
-          {/* Sidebar - photo strip + actions */}
-          <div className="md:w-64 border-t md:border-t-0 md:border-l border-[#E5E5E3] flex flex-col">
-            {/* Photo strip */}
-            {photos.length > 1 && (
-              <div className="p-3 border-b border-[#E5E5E3]">
-                <p className="text-xs font-medium text-[#999] mb-2">Nuotraukos</p>
-                <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-y-auto md:max-h-48">
-                  {photos.map((photo, i) => (
-                    <button
-                      key={photo.id}
-                      onClick={() => setSelectedIndex(i)}
-                      className={`shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
-                        i === selectedIndex ? 'border-[#FF6B35] ring-1 ring-[#FF6B35]/30' : 'border-transparent hover:border-[#E5E5E3]'
-                      }`}
-                    >
-                      <img src={photo.image_url} alt={`${model.name} nuotrauka ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="p-4 space-y-2">
-              {selectedPhoto && (
-                <>
-                  <button
-                    onClick={() => onCreatePost(selectedPhoto.image_url)}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Sukurti įrašą
-                  </button>
-                  <button
-                    onClick={() => onDownload(selectedPhoto.image_url, model.name)}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-[#1A1A1A] bg-[#F7F7F5] hover:bg-[#EEEEED] rounded-lg transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Atsisiųsti
-                  </button>
-                </>
-              )}
-              <button
-                onClick={handleDelete}
-                className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                  confirmDelete
-                    ? 'text-white bg-red-500 hover:bg-red-600'
-                    : 'text-red-500 bg-red-50 hover:bg-red-100'
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                {confirmDelete ? 'Patvirtinti trynimą' : 'Ištrinti modelį'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-});
-
-const PaginationControls = memo(function PaginationControls({
-  totalCount,
-  visibleCount,
-  page,
-  pageSize,
-  initialCount,
-  onShowMore,
-  onShowLess,
-  onNextPage,
-  onPrevPage,
-}: {
-  totalCount: number;
-  visibleCount: number;
-  page: number;
-  pageSize: number;
-  initialCount: number;
-  onShowMore: () => void;
-  onShowLess: () => void;
-  onNextPage: () => void;
-  onPrevPage: () => void;
-}) {
-  const totalPages = Math.ceil(totalCount / pageSize);
-  const isCollapsed = visibleCount <= initialCount;
-
-  return (
-    <div className="flex items-center justify-center gap-3 mt-4">
-      {/* Show more / show less */}
-      {isCollapsed && totalCount > initialCount && (
-        <button
-          onClick={onShowMore}
-          className="px-4 py-2 text-sm font-medium text-[#FF6B35] bg-[#FF6B35]/10 hover:bg-[#FF6B35]/20 rounded-lg transition-colors"
-        >
-          Rodyti daugiau
-        </button>
-      )}
-      {!isCollapsed && (
-        <button
-          onClick={onShowLess}
-          className="px-4 py-2 text-sm font-medium text-[#999999] hover:text-[#1A1A1A] hover:bg-[#F7F7F5] rounded-lg transition-colors"
-        >
-          Rodyti mažiau
-        </button>
-      )}
-
-      {/* Page navigation (only when expanded and more than one page) */}
-      {!isCollapsed && totalPages > 1 && (
-        <>
-          <button
-            onClick={onPrevPage}
-            disabled={page === 0}
-            className="px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-[#1A1A1A] hover:bg-[#F7F7F5]"
-          >
-            Ankstesnis
-          </button>
-          <span className="text-sm text-[#999999]">
-            {page + 1} / {totalPages}
-          </span>
-          <button
-            onClick={onNextPage}
-            disabled={page >= totalPages - 1}
-            className="px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-[#1A1A1A] hover:bg-[#F7F7F5]"
-          >
-            Kitas puslapis
-          </button>
-        </>
-      )}
-    </div>
-  );
-});
+import type { AvatarModel } from '../types/database';
 
 export default function Gallery() {
   usePageTitle('Galerija/Įrašai');
   const { t } = useLanguage();
+  const { showToast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const { images, models, posts, loading: galleryLoading, error, deleteImage, deletePost, refresh } = useGallery();
   const navigate = useNavigate();
@@ -392,9 +39,9 @@ export default function Gallery() {
     posts: true,
   });
 
-  const toggleSection = (section: keyof typeof openSections) => {
+  const toggleSection = useCallback((section: keyof typeof openSections) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
-  };
+  }, []);
 
   // Pagination state per section
   const INITIAL_COUNT = 4;
@@ -425,7 +72,7 @@ export default function Gallery() {
     }
   }, [editingIndex]);
 
-  const handleDelete = async (imageId: string, storagePath: string) => {
+  const handleDelete = useCallback(async (imageId: string, storagePath: string) => {
     const currentIndex = lightboxIndex;
     const totalImages = images.length;
 
@@ -441,7 +88,12 @@ export default function Gallery() {
       }
     }
 
-    await deleteImage(imageId, storagePath);
+    try {
+      await deleteImage(imageId, storagePath);
+    } catch {
+      showToast('Nepavyko ištrinti nuotraukos', 'error');
+      return;
+    }
 
     if (currentIndex >= 0 && totalImages > 1) {
       if (currentIndex >= totalImages - 1) {
@@ -450,26 +102,26 @@ export default function Gallery() {
     } else if (totalImages <= 1) {
       setLightboxIndex(-1);
     }
-  };
+  }, [lightboxIndex, images, editingIndex, deleteImage, postProcess, showToast]);
 
-  const handleCreatePost = (index: number) => {
+  const handleCreatePost = useCallback((index: number) => {
     const image = images[index];
     if (image) {
       navigate('/post-creator', { state: { galleryImageUrl: image.image_url, galleryImageId: image.id } });
     }
-  };
+  }, [images, navigate]);
 
-  const handleEdit = (index: number) => {
+  const handleEdit = useCallback((index: number) => {
     setEditingIndex(index);
     setPostProcessResult(null);
     postProcess.reset();
-  };
+  }, [postProcess]);
 
-  const handleCloseEdit = () => {
+  const handleCloseEdit = useCallback(() => {
     setEditingIndex(null);
     setPostProcessResult(null);
     postProcess.reset();
-  };
+  }, [postProcess]);
 
   const getEditingImageUrl = (): string | null => {
     if (editingIndex === null || !images[editingIndex]) return null;
@@ -488,10 +140,11 @@ export default function Gallery() {
       refresh();
     } catch (err) {
       console.error('Failed to save post-processed image:', err);
+      showToast('Nepavyko išsaugoti redaguotos nuotraukos', 'error');
     }
   };
 
-  const handleBackground = async (prompt: string) => {
+  const handleBackground = useCallback(async (prompt: string) => {
     const sourceUrl = getEditingImageUrl();
     if (!sourceUrl) return;
     const result = await postProcess.process('background', sourceUrl, { backgroundPrompt: prompt });
@@ -499,9 +152,9 @@ export default function Gallery() {
       setPostProcessResult(result);
       await saveAndRefresh(result, `background: ${prompt}`);
     }
-  };
+  }, [editingIndex, images, postProcess, user, saveGeneratedImage, refresh, showToast]);
 
-  const handlePose = async (prompt: string) => {
+  const handlePose = useCallback(async (prompt: string) => {
     const sourceUrl = getEditingImageUrl();
     if (!sourceUrl) return;
     const result = await postProcess.process('edit', sourceUrl, { editPrompt: prompt });
@@ -509,9 +162,9 @@ export default function Gallery() {
       setPostProcessResult(result);
       await saveAndRefresh(result, `pose: ${prompt}`);
     }
-  };
+  }, [editingIndex, images, postProcess, user, saveGeneratedImage, refresh, showToast]);
 
-  const handleEditPrompt = async (prompt: string) => {
+  const handleEditPrompt = useCallback(async (prompt: string) => {
     const sourceUrl = getEditingImageUrl();
     if (!sourceUrl) return;
     const result = await postProcess.process('edit', sourceUrl, { editPrompt: prompt });
@@ -519,14 +172,14 @@ export default function Gallery() {
       setPostProcessResult(result);
       await saveAndRefresh(result, `edit: ${prompt}`);
     }
-  };
+  }, [editingIndex, images, postProcess, user, saveGeneratedImage, refresh, showToast]);
 
-  const handleModelCreatePost = (imageUrl: string) => {
+  const handleModelCreatePost = useCallback((imageUrl: string) => {
     setSelectedModel(null);
     navigate('/post-creator', { state: { galleryImageUrl: imageUrl } });
-  };
+  }, [navigate]);
 
-  const handleModelDownload = async (imageUrl: string, name: string) => {
+  const handleModelDownload = useCallback(async (imageUrl: string, name: string) => {
     try {
       const response = await fetch(imageUrl);
       const blob = await response.blob();
@@ -541,35 +194,40 @@ export default function Gallery() {
     } catch {
       window.open(imageUrl, '_blank');
     }
-  };
+  }, []);
 
-  const handleDeleteModel = async (modelId: string) => {
+  const handleDeleteModel = useCallback(async (modelId: string) => {
     try {
       const { error } = await (await import('../lib/supabase')).supabase
         .from('avatar_models')
         .delete()
         .eq('id', modelId);
-      if (!error) refresh();
+      if (!error) {
+        refresh();
+      } else {
+        showToast('Nepavyko ištrinti modelio', 'error');
+      }
     } catch {
-      // Error handled silently
+      showToast('Nepavyko ištrinti modelio', 'error');
     }
-  };
+  }, [refresh, showToast]);
 
-  const handleCopyPostText = async (text: string) => {
+  const handleCopyPostText = useCallback(async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
+      showToast('Tekstas nukopijuotas', 'success');
     } catch {
-      // Silently fail
+      showToast('Nepavyko nukopijuoti teksto', 'error');
     }
-  };
+  }, [showToast]);
 
-  const handleDeletePost = async (postId: string) => {
+  const handleDeletePost = useCallback(async (postId: string) => {
     try {
       await deletePost(postId);
     } catch {
-      // Error handled in hook
+      showToast('Nepavyko ištrinti įrašo', 'error');
     }
-  };
+  }, [deletePost, showToast]);
 
   const pp = (t as Record<string, unknown>).postProcess as Record<string, string> | undefined;
 
@@ -678,9 +336,9 @@ export default function Gallery() {
           <button
             onClick={refresh}
             className="p-2 text-[#999999] hover:text-[#1A1A1A] hover:bg-[#F7F7F5] rounded-lg transition-all"
-            title="Refresh"
+            aria-label="Atnaujinti"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
           </button>
@@ -742,7 +400,7 @@ export default function Gallery() {
               <div className="mt-3">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {slicedModels.map((model) => (
-                    <ModelCard
+                    <GalleryModelCard
                       key={model.id}
                       model={model}
                       onClick={() => setSelectedModel(model)}
@@ -827,9 +485,9 @@ export default function Gallery() {
             <button
               onClick={handleCloseEdit}
               className="p-2 text-[#999999] hover:text-[#1A1A1A] hover:bg-[#F7F7F5] rounded-lg transition-colors"
-              title={t.actions?.cancel || 'Uzdaryti'}
+              aria-label={t.actions?.cancel || 'Uždaryti'}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
