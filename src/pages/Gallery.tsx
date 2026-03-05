@@ -110,7 +110,7 @@ const PostCard = memo(function PostCard({
     <div className="bg-white border border-[#E5E5E3] rounded-xl overflow-hidden hover:shadow-md transition-all group">
       {/* Post image */}
       {post.image_url && (
-        <div className="aspect-video overflow-hidden bg-gray-100">
+        <div className="aspect-[4/5] overflow-hidden bg-gray-100">
           <img
             src={post.image_url}
             alt="Įrašo nuotrauka"

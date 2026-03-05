@@ -27,8 +27,8 @@ export function FacebookPreview({ text, imageUrl, isMobile }: FacebookPreviewPro
 
       {/* Image */}
       {imageUrl && (
-        <div className="w-full aspect-square bg-[#F7F7F5]">
-          <img src={imageUrl} alt="Post" className="w-full h-full object-cover" loading="lazy" />
+        <div className="w-full bg-[#F7F7F5] flex items-center justify-center">
+          <img src={imageUrl} alt="Post" className="w-full max-h-[500px] object-contain" loading="lazy" />
         </div>
       )}
 

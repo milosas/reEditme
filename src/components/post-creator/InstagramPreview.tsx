@@ -18,7 +18,7 @@ export function InstagramPreview({ text, imageUrl, isMobile }: InstagramPreviewP
       </div>
 
       {/* Image */}
-      <div className="w-full aspect-square bg-[#F7F7F5]">
+      <div className="w-full aspect-[4/5] bg-[#F7F7F5]">
         {imageUrl ? (
           <img src={imageUrl} alt="Post" className="w-full h-full object-cover" loading="lazy" />
         ) : (
