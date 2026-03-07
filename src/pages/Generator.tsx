@@ -11,7 +11,6 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { GuestCreditBanner } from '../components/credits/GuestCreditBanner';
 import { AnimatedSection } from '../components/animation/AnimatedSection';
 import { ImageUploader } from '../components/upload/ImageUploader';
-import { ImagePreviewGrid } from '../components/upload/ImagePreviewGrid';
 import { ConfigPanel } from '../components/config/ConfigPanel';
 import { Button } from '../components/ui/Button';
 import { LoadingOverlay } from '../components/generation/LoadingOverlay';
@@ -19,7 +18,8 @@ import { ResultsGallery } from '../components/generation/ResultsGallery';
 import { ResultsActions } from '../components/generation/ResultsActions';
 import { PostProcessToolbar } from '../components/generation/PostProcessToolbar';
 import { ErrorMessage } from '../components/generation/ErrorMessage';
-import type { Config } from '../types';
+import type { Config, GarmentLabel } from '../types';
+import { GARMENT_LABELS } from '../types';
 import { InsufficientCreditsModal } from '../components/credits/InsufficientCreditsModal';
 
 export default function Generator() {
@@ -45,6 +45,22 @@ export default function Generator() {
     qualityMode: 'balanced',
     imageCount: 1
   });
+
+  // Garment labels per uploaded image
+  const [garmentLabels, setGarmentLabels] = useState<(GarmentLabel | null)[]>([]);
+
+  const handleRemoveImage = (index: number) => {
+    removeImage(index);
+    setGarmentLabels(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSetLabel = (index: number, label: GarmentLabel | null) => {
+    setGarmentLabels(prev => {
+      const next = [...prev];
+      next[index] = label;
+      return next;
+    });
+  };
 
   // Generation state
   const { state, creditError, clearCreditError, generate, cancel, reset } = useGeneration();
@@ -77,21 +93,25 @@ export default function Generator() {
     }
   }, [searchParams, customAvatars, setSearchParams, t]);
 
-  // Form validation — need avatar + clothing image
-  const canGenerate = hasImages && config.avatar !== null;
+  // Form validation — need avatar + clothing image + all garment types selected
+  const allLabelsSet = images.length > 0 && images.every((_, i) => !!garmentLabels[i]);
+  const canGenerate = hasImages && config.avatar !== null && allLabelsSet;
 
   const handleGenerate = () => {
     if (!canGenerate) return;
-    generate(config, images);
+    const labels = garmentLabels.map(l => l ?? null);
+    generate(config, images, labels);
   };
 
   const handleRegenerate = () => {
-    generate(config, images);
+    const labels = garmentLabels.map(l => l ?? null);
+    generate(config, images, labels);
   };
 
   const handleNewUpload = () => {
     reset();
     clearImages();
+    setGarmentLabels([]);
     postProcess.reset();
     setPostProcessResult(null);
     setSelectedResultIndex(0);
@@ -126,34 +146,28 @@ export default function Generator() {
     }
   };
 
-  const handleBackground = async (prompt: string) => {
+  const [pendingSavePrompt, setPendingSavePrompt] = useState<string | null>(null);
+
+  const handleApply = async (type: 'background' | 'pose' | 'edit', prompt: string) => {
     const sourceUrl = getSelectedImageUrl();
     if (!sourceUrl) return;
-    const result = await postProcess.process('background', sourceUrl, { backgroundPrompt: prompt });
+
+    const action = type === 'background' ? 'background' : 'edit';
+    const params = type === 'background'
+      ? { backgroundPrompt: prompt }
+      : { editPrompt: prompt };
+
+    const result = await postProcess.process(action, sourceUrl, params);
     if (result) {
       setPostProcessResult(result);
-      await savePostProcessResult(result, `background: ${prompt}`);
+      setPendingSavePrompt(`${type}: ${prompt}`);
     }
   };
 
-  const handlePose = async (prompt: string) => {
-    const sourceUrl = getSelectedImageUrl();
-    if (!sourceUrl) return;
-    const result = await postProcess.process('edit', sourceUrl, { editPrompt: prompt });
-    if (result) {
-      setPostProcessResult(result);
-      await savePostProcessResult(result, `pose: ${prompt}`);
-    }
-  };
-
-  const handleEdit = async (prompt: string) => {
-    const sourceUrl = getSelectedImageUrl();
-    if (!sourceUrl) return;
-    const result = await postProcess.process('edit', sourceUrl, { editPrompt: prompt });
-    if (result) {
-      setPostProcessResult(result);
-      await savePostProcessResult(result, `edit: ${prompt}`);
-    }
+  const handleSaveResult = async () => {
+    if (!postProcessResult || !pendingSavePrompt) return;
+    await savePostProcessResult(postProcessResult, pendingSavePrompt);
+    setPendingSavePrompt(null);
   };
 
   return (
@@ -204,15 +218,32 @@ export default function Generator() {
                     className="w-full h-auto rounded-lg ring-2 ring-[#FF6B35]"
                   />
                 </div>
+                {pendingSavePrompt && (
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={handleSaveResult}
+                      className="px-5 py-2.5 rounded-xl bg-[#10B981] text-white text-sm font-medium hover:bg-[#059669] transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Saugoti
+                    </button>
+                    <button
+                      onClick={() => { setPostProcessResult(null); setPendingSavePrompt(null); }}
+                      className="px-4 py-2.5 rounded-xl bg-[#F7F7F5] text-[#666666] text-sm font-medium hover:bg-[#EEEEED] transition-colors"
+                    >
+                      Atmesti
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Post-processing toolbar */}
             <PostProcessToolbar
               isProcessing={postProcess.isProcessing}
-              onBackground={handleBackground}
-              onPose={handlePose}
-              onEdit={handleEdit}
+              onApply={handleApply}
             />
 
             {postProcess.error && (
@@ -241,12 +272,69 @@ export default function Generator() {
                   canAddMore={canAddMore}
                 />
 
-                <ImagePreviewGrid
-                  images={images}
-                  onRemove={removeImage}
-                />
-
+                {/* Garment upload hints */}
                 {!hasImages && (
+                  <div className="mt-3 p-3 bg-[#F7F7F5] border border-[#E5E5E3] rounded-xl space-y-1.5">
+                    <p className="text-xs font-medium text-[#666666]">Patarimai drabužių nuotraukoms:</p>
+                    <p className="text-xs text-[#999999] flex items-start gap-1.5">
+                      <span className="text-[#FF6B35] mt-0.5 flex-shrink-0">•</span>
+                      Plokščias fonas (balta/pilka) — geriausi rezultatai
+                    </p>
+                    <p className="text-xs text-[#999999] flex items-start gap-1.5">
+                      <span className="text-[#FF6B35] mt-0.5 flex-shrink-0">•</span>
+                      Drabužis turi būti aiškiai matomas (nelankstytas, nesuspausta)
+                    </p>
+                    <p className="text-xs text-[#999999] flex items-start gap-1.5">
+                      <span className="text-[#FF6B35] mt-0.5 flex-shrink-0">•</span>
+                      Galima įkelti iki 4 drabužių — kiekvienas bus uždėtas nuosekliai
+                    </p>
+                  </div>
+                )}
+
+                {/* Garment label selectors — shown inline after each uploaded image */}
+                {hasImages ? (
+                  <div className="mt-3 space-y-2">
+                    {images.map((img, i) => (
+                      <div key={img.previewUrl} className="flex items-center gap-3 bg-[#F7F7F5] border border-[#E5E5E3] rounded-xl px-3 py-2">
+                        <img
+                          src={img.previewUrl}
+                          alt={`Drabužis ${i + 1}`}
+                          className="w-10 h-10 object-cover rounded-lg flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-[#999999] mb-1">Drabužio tipas</p>
+                          <select
+                            value={garmentLabels[i] ?? ''}
+                            onChange={e => handleSetLabel(i, (e.target.value as GarmentLabel) || null)}
+                            className="w-full text-sm bg-white border border-[#E5E5E3] rounded-lg px-2 py-1 text-[#1A1A1A] focus:outline-none focus:border-[#FF6B35] focus:ring-1 focus:ring-[#FF6B35]"
+                          >
+                            <option value="">— Pasirinkti —</option>
+                            {GARMENT_LABELS.map(opt => (
+                              <option key={opt.id} value={opt.id}>{opt.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveImage(i)}
+                          className="p-1.5 text-[#999999] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                          aria-label="Pašalinti"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                    {images.length > 1 && (
+                      <p className="text-xs text-[#999999] flex items-center gap-1.5 pt-1">
+                        <svg className="w-3.5 h-3.5 text-[#FF6B35] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        Visi drabužiai bus uždėti ant vieno avataro — vienas rezultatas
+                      </p>
+                    )}
+                  </div>
+                ) : (
                   <p className="mt-4 text-sm text-[#FF6B35]">
                     {t.validation.noImages}
                   </p>
@@ -257,12 +345,16 @@ export default function Generator() {
             {/* Right Column: Configuration */}
             <AnimatedSection direction="right" delay={0.1} className="w-full md:w-1/2">
               <div className="bg-white border border-[#E5E5E3] rounded-2xl p-6">
-                <h2 className="text-lg font-semibold text-[#1A1A1A] mb-4 flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-[#1A1A1A] mb-2 flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center text-sm text-white font-bold">
                     2
                   </span>
                   {t.config.title}
                 </h2>
+                <p className="text-xs text-[#999999] mb-4 flex items-start gap-1.5">
+                  <span className="text-[#FF6B35] mt-0.5 flex-shrink-0">ℹ</span>
+                  Modelio nuotrauka turi rodyti <strong className="text-[#666666]">visą kūną</strong> (nuo galvos iki pėdų) — taip drabužiai bus uždėti tiksliau
+                </p>
                 <ConfigPanel
                   config={config}
                   onConfigChange={setConfig}
@@ -291,6 +383,12 @@ export default function Generator() {
                       <p className="text-sm text-[#999999] flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35]" />
                         {t.validation.noAvatar}
+                      </p>
+                    )}
+                    {hasImages && !allLabelsSet && (
+                      <p className="text-sm text-[#999999] flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35]" />
+                        Pasirinkite drabužio tipą kiekvienai nuotraukai
                       </p>
                     )}
                   </div>
