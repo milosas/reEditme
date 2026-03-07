@@ -140,14 +140,9 @@ export function BuyCreditsModal({ isOpen, onClose }: BuyCreditsModalProps) {
               ))}
             </div>
 
-            {/* Divider */}
-            <div className="relative py-2">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-3 bg-white text-gray-400">arba</span>
-              </div>
+            {/* Section header */}
+            <div className="pt-1">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Papildomos funkcijos</p>
             </div>
 
             {/* Social subscription */}
@@ -163,7 +158,7 @@ export function BuyCreditsModal({ isOpen, onClose }: BuyCreditsModalProps) {
                     <span className="text-sm text-gray-500">/ men.</span>
                   </div>
                   <p className="text-sm font-medium text-gray-700 mt-1">
-                    Socialiniu tinklu prenumerata
+                    Socialinių tinklų publikavimas
                   </p>
                   <ul className="mt-2 space-y-1">
                     <li className="flex items-center gap-1.5 text-xs text-gray-500">
@@ -206,7 +201,7 @@ export function BuyCreditsModal({ isOpen, onClose }: BuyCreditsModalProps) {
                         Kraunama...
                       </span>
                     ) : (
-                      'Prenumeruoti'
+                      'Aktyvuoti'
                     )}
                   </button>
                 )}

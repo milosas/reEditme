@@ -31,7 +31,7 @@ export function useGeneration() {
     };
   }, []);
 
-  const generate = useCallback(async (config: Config, images: UploadedImage[]) => {
+  const generate = useCallback(async (config: Config, images: UploadedImage[], garmentLabels?: (string | null)[]) => {
     // Create new AbortController for this request
     abortControllerRef.current = new AbortController();
 
@@ -98,7 +98,7 @@ export function useGeneration() {
       }
 
       // Call Edge Function - it handles fal.ai queue polling
-      const data = await generateImages(config, images, combinedSignal);
+      const data = await generateImages(config, images, combinedSignal, garmentLabels);
 
       // Clear timers on success
       progressTimersRef.current.forEach(timer => clearTimeout(timer));
@@ -165,8 +165,6 @@ export function useGeneration() {
           required: parseInt(parts[1], 10) || 0,
           balance: parseInt(parts[2], 10) || 0,
         });
-      } else if (error.message === 'BODY_POSE_ERROR') {
-        errorType = 'BODY_POSE_ERROR';
       } else if (error.message === 'API_ERROR') {
         errorType = 'API_ERROR';
       } else if (error.message === 'AVATAR_LOAD_FAILED') {

@@ -64,6 +64,23 @@ export interface GarmentPhotoTypeOption {
   description: string;
 }
 
+export type GarmentLabel = 'top' | 'bottom' | 'dress' | 'shoes' | 'bag' | 'accessory';
+
+export interface GarmentLabelOption {
+  id: GarmentLabel;
+  name: string;     // Lithuanian display name
+  prompt: string;   // English for AI prompt
+}
+
+export const GARMENT_LABELS: GarmentLabelOption[] = [
+  { id: 'top',       name: 'Viršus',          prompt: 'top' },
+  { id: 'bottom',    name: 'Kelnės/Sijonas',  prompt: 'trousers/skirt' },
+  { id: 'dress',     name: 'Suknelė',         prompt: 'dress' },
+  { id: 'shoes',     name: 'Batai',           prompt: 'shoes' },
+  { id: 'bag',       name: 'Krepšys',         prompt: 'bag' },
+  { id: 'accessory', name: 'Aksesuaras',      prompt: 'accessory' },
+];
+
 export interface Config {
   avatar: Avatar | null;
   qualityMode: QualityMode;

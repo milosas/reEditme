@@ -120,6 +120,7 @@ export default function Gallery() {
   const handleCloseEdit = useCallback(() => {
     setEditingIndex(null);
     setPostProcessResult(null);
+    setPendingSavePrompt(null);
     postProcess.reset();
   }, [postProcess]);
 
@@ -144,40 +145,41 @@ export default function Gallery() {
     }
   };
 
-  const handleBackground = useCallback(async (prompt: string) => {
+  const [pendingSavePrompt, setPendingSavePrompt] = useState<string | null>(null);
+
+  const handleApply = useCallback(async (type: 'background' | 'pose' | 'edit', prompt: string) => {
     const sourceUrl = getEditingImageUrl();
     if (!sourceUrl) return;
-    const result = await postProcess.process('background', sourceUrl, { backgroundPrompt: prompt });
+
+    const action = type === 'background' ? 'background' : 'edit';
+    const params = type === 'background'
+      ? { backgroundPrompt: prompt }
+      : { editPrompt: prompt };
+
+    const result = await postProcess.process(action, sourceUrl, params);
     if (result) {
       setPostProcessResult(result);
-      await saveAndRefresh(result, `background: ${prompt}`);
+      setPendingSavePrompt(`${type}: ${prompt}`);
     }
-  }, [editingIndex, images, postProcess, user, saveGeneratedImage, refresh, showToast]);
+  }, [editingIndex, images, postProcess]);
 
-  const handlePose = useCallback(async (prompt: string) => {
-    const sourceUrl = getEditingImageUrl();
-    if (!sourceUrl) return;
-    const result = await postProcess.process('edit', sourceUrl, { editPrompt: prompt });
-    if (result) {
-      setPostProcessResult(result);
-      await saveAndRefresh(result, `pose: ${prompt}`);
-    }
-  }, [editingIndex, images, postProcess, user, saveGeneratedImage, refresh, showToast]);
+  const handleSaveResult = useCallback(async () => {
+    if (!postProcessResult || !pendingSavePrompt) return;
+    await saveAndRefresh(postProcessResult, pendingSavePrompt);
+    setPendingSavePrompt(null);
+    showToast('Nuotrauka išsaugota', 'success');
+  }, [postProcessResult, pendingSavePrompt, saveAndRefresh, showToast]);
 
-  const handleEditPrompt = useCallback(async (prompt: string) => {
-    const sourceUrl = getEditingImageUrl();
-    if (!sourceUrl) return;
-    const result = await postProcess.process('edit', sourceUrl, { editPrompt: prompt });
-    if (result) {
-      setPostProcessResult(result);
-      await saveAndRefresh(result, `edit: ${prompt}`);
-    }
-  }, [editingIndex, images, postProcess, user, saveGeneratedImage, refresh, showToast]);
-
-  const handleModelCreatePost = useCallback((imageUrl: string) => {
+  const handleModelTryOn = useCallback((imageUrl: string) => {
     setSelectedModel(null);
-    navigate('/post-creator', { state: { galleryImageUrl: imageUrl } });
-  }, [navigate]);
+    // Find the avatar model that owns this photo to pass its ID to Generator
+    const ownerModel = models.find(m => m.photos?.some(p => p.image_url === imageUrl));
+    if (ownerModel) {
+      navigate(`/generator?selectAvatar=${ownerModel.id}`);
+    } else {
+      navigate('/generator');
+    }
+  }, [navigate, models]);
 
   const handleModelDownload = useCallback(async (imageUrl: string, name: string) => {
     try {
@@ -261,8 +263,8 @@ export default function Gallery() {
         {/* Skeleton: posts */}
         <div>
           <Skeleton className="h-6 w-28 mb-4" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {[0, 1, 2].map((i) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {[0, 1, 2, 3].map((i) => (
               <SkeletonPostCard key={i} />
             ))}
           </div>
@@ -438,7 +440,7 @@ export default function Gallery() {
             />
             {openSections.posts && (
               <div className="mt-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {slicedPosts.map((post) => (
                     <PostCard
                       key={post.id}
@@ -506,15 +508,32 @@ export default function Gallery() {
                   className="w-full h-auto rounded-lg ring-2 ring-[#FF6B35]"
                 />
               </div>
+              {pendingSavePrompt && (
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={handleSaveResult}
+                    className="px-5 py-2.5 rounded-xl bg-[#10B981] text-white text-sm font-medium hover:bg-[#059669] transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    {pp?.save || 'Saugoti'}
+                  </button>
+                  <button
+                    onClick={() => { setPostProcessResult(null); setPendingSavePrompt(null); }}
+                    className="px-4 py-2.5 rounded-xl bg-[#F7F7F5] text-[#666666] text-sm font-medium hover:bg-[#EEEEED] transition-colors"
+                  >
+                    {pp?.discard || 'Atmesti'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
           {/* PostProcess toolbar */}
           <PostProcessToolbar
             isProcessing={postProcess.isProcessing}
-            onBackground={handleBackground}
-            onPose={handlePose}
-            onEdit={handleEditPrompt}
+            onApply={handleApply}
           />
 
           {postProcess.error && (
@@ -536,7 +555,7 @@ export default function Gallery() {
         <ModelDetailModal
           model={selectedModel}
           onClose={() => setSelectedModel(null)}
-          onCreatePost={handleModelCreatePost}
+          onCreatePost={handleModelTryOn}
           onDownload={handleModelDownload}
           onDelete={handleDeleteModel}
         />

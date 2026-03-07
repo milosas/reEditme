@@ -71,6 +71,7 @@ interface GenerateRequest {
   avatarIsCustom?: boolean
   category?: 'tops' | 'bottoms' | 'one-pieces' | 'auto'
   garmentPhotoType?: 'auto' | 'model' | 'flat-lay'
+  garmentLabels?: string[]   // optional label per garment: 'top' | 'bottom' | 'dress' | 'shoes' | 'bag' | 'accessory'
   // post-processing fields:
   sourceImageUrl?: string    // try-on result to post-process
   backgroundPrompt?: string  // for background mode
@@ -90,14 +91,12 @@ interface GenerateResponse {
   error?: string
 }
 
-// Map quality mode to FASHN mode parameter
-function mapQualityToMode(qualityMode: string): string {
-  switch (qualityMode) {
-    case 'performance': return 'performance'
-    case 'balanced': return 'balanced'
-    case 'quality': return 'quality'
-    default: return 'balanced'
-  }
+// Map garmentLabel → FASHN category
+function toFashnCategory(label?: string): 'tops' | 'bottoms' | 'one-pieces' | 'auto' {
+  if (label === 'top') return 'tops'
+  if (label === 'bottom') return 'bottoms'
+  if (label === 'dress') return 'one-pieces'
+  return 'auto'
 }
 
 // Upload base64 image data to fal.ai storage, returns URL
@@ -224,9 +223,10 @@ async function falQueueSubmitAndPoll(endpoint: string, body: Record<string, unkn
   }
   console.log('Fal request submitted:', requestId)
 
-  // Poll for completion (stay under 150s Supabase edge function limit)
-  const statusUrl = `${queueUrl}/requests/${requestId}/status`
-  const resultUrl = `${queueUrl}/requests/${requestId}`
+  // Use URLs from submit response when available (avoids nested-path construction bugs)
+  const statusUrl = submitData.status_url || `${queueUrl}/requests/${requestId}/status`
+  const resultUrl = submitData.response_url || `${queueUrl}/requests/${requestId}`
+  console.log('Status URL:', statusUrl)
   const maxPolls = 40 // up to ~2 minutes
   const pollInterval = 3000
 
@@ -248,17 +248,20 @@ async function falQueueSubmitAndPoll(endpoint: string, body: Record<string, unkn
     console.log('Fal status:', statusData.status, `(poll ${i + 1}/${maxPolls})`)
 
     if (statusData.status === 'COMPLETED') {
-      // Fetch result
+      // Result may be embedded in status response (fal.ai includes output on COMPLETED)
+      if (statusData.output) {
+        console.log('Result embedded in status response')
+        return statusData.output
+      }
+      // Fallback: fetch from result URL
       const resultResponse = await fetch(resultUrl, {
-        headers: {
-          'Authorization': `Key ${FAL_KEY}`,
-        },
+        headers: { 'Authorization': `Key ${FAL_KEY}` },
       })
-
       if (!resultResponse.ok) {
+        const errText = await resultResponse.text()
+        console.error('Result fetch failed:', resultResponse.status, errText)
         throw new Error(`Fal result fetch failed: ${resultResponse.status}`)
       }
-
       return await resultResponse.json()
     }
 
@@ -271,98 +274,83 @@ async function falQueueSubmitAndPoll(endpoint: string, body: Record<string, unkn
   throw new Error('Fal generation timed out')
 }
 
-// Handle try-on via FASHN v1.6 (synchronous call — stays under 150s Supabase limit)
+// Handle try-on via FASHN AI (sequential for multi-garment)
 async function handleTryOn(body: GenerateRequest): Promise<GenerateResponse> {
   if (!body.images || body.images.length === 0) {
     throw new Error('No clothing images provided')
   }
 
-  // Upload clothing image to fal CDN storage
-  console.log('Uploading clothing image to fal storage...')
-  const garmentUrl = await uploadToFalStorage(body.images[0])
-  console.log('Clothing image uploaded:', garmentUrl)
-
-  // Prepare avatar image URL
-  let modelImageUrl: string
-
+  // 1. Upload avatar image
+  let currentModelUrl: string
   if (body.avatarImageBase64) {
     console.log('Uploading custom avatar to fal storage...')
     try {
-      modelImageUrl = await uploadToFalStorage(body.avatarImageBase64)
-      console.log('Custom avatar uploaded:', modelImageUrl)
+      currentModelUrl = await uploadToFalStorage(body.avatarImageBase64)
+      console.log('Custom avatar uploaded:', currentModelUrl)
     } catch (avatarError) {
       console.error('Failed to upload custom avatar:', avatarError.message)
       throw new Error('AVATAR_UPLOAD_FAILED: Could not process custom avatar image')
     }
   } else if (body.avatarImageUrl) {
-    console.log('Using preset avatar URL directly:', body.avatarImageUrl)
-    modelImageUrl = body.avatarImageUrl
+    currentModelUrl = await ensureFalStorageUrl(body.avatarImageUrl)
   } else {
     throw new Error('No avatar image provided')
   }
 
-  const mode = mapQualityToMode(body.qualityMode || 'balanced')
-  const numSamples = body.imageCount || 1
-
-  // Category: auto-detect by default, or use frontend hint if provided
-  const category = body.category || 'auto'
-  // garment_photo_type: 'flat-lay' for product photos (most common user upload)
-  const garmentPhotoType = body.garmentPhotoType || 'flat-lay'
-
-  console.log(`FASHN try-on: mode=${mode}, samples=${numSamples}, category=${category}, photoType=${garmentPhotoType}`)
-
-  // Call FASHN v1.6 via synchronous fal.run endpoint (blocks until result)
-  const syncUrl = 'https://fal.run/fal-ai/fashn/tryon/v1.6'
-  console.log('Calling FASHN sync endpoint...')
-  const falResponse = await fetch(syncUrl, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Key ${FAL_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model_image: modelImageUrl,
-      garment_image: garmentUrl,
-      category,
-      mode,
-      garment_photo_type: garmentPhotoType,
-      num_samples: numSamples,
-      output_format: 'png',
-    }),
-  })
-
-  if (!falResponse.ok) {
-    const errText = await falResponse.text()
-    console.error('FASHN sync failed:', falResponse.status, errText)
-    throw new Error(`FASHN generation failed: ${falResponse.status} - ${errText.slice(0, 200)}`)
-  }
-
-  const result = await falResponse.json() as { images?: Array<{ url: string }> }
-  console.log('FASHN sync completed')
-
-  if (!result.images || result.images.length === 0) {
-    throw new Error('No images returned from FASHN')
-  }
-
-  console.log('FASHN returned', result.images.length, 'images')
-
-  // Download images as base64 for CORS-free frontend handling
-  const images: GeneratedImage[] = await Promise.all(
-    result.images.map(async (img: { url: string }) => {
-      try {
-        const base64 = await downloadImageAsBase64(img.url)
-        return { url: img.url, base64 }
-      } catch (downloadErr) {
-        console.error('Failed to download image, returning URL only:', downloadErr)
-        return { url: img.url }
-      }
+  // 2. Upload all garment images in parallel
+  console.log(`Uploading ${body.images.length} garment image(s) to fal storage...`)
+  const garmentUrls = await Promise.all(
+    body.images.map((img, i) => {
+      console.log(`Uploading garment ${i + 1}/${body.images.length}...`)
+      return uploadToFalStorage(img)
     })
   )
+  console.log('All garment images uploaded:', garmentUrls)
+
+  // 3. Sequential FASHN try-on — sync call (avoids queue nested-path URL issues)
+  for (let i = 0; i < garmentUrls.length; i++) {
+    const category = toFashnCategory(body.garmentLabels?.[i])
+    console.log(`FASHN try-on step ${i + 1}/${garmentUrls.length}: category=${category}, model=${currentModelUrl.substring(0, 60)}`)
+
+    const fashnResponse = await fetch('https://fal.run/fal-ai/fashn/tryon/v1.6', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${FAL_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model_image_url: currentModelUrl,
+        garment_image_url: garmentUrls[i],
+        category,
+        garment_photo_type: 'auto',
+      }),
+    })
+
+    if (!fashnResponse.ok) {
+      const errText = await fashnResponse.text()
+      console.error(`FASHN step ${i + 1} failed:`, fashnResponse.status, errText)
+      throw new Error(`FASHN try-on failed: ${fashnResponse.status} - ${errText.substring(0, 200)}`)
+    }
+
+    const result = await fashnResponse.json() as { image?: { url: string }; images?: Array<{ url: string }> }
+    console.log(`Step ${i + 1} result keys:`, Object.keys(result))
+
+    const resultImageUrl = result.image?.url || result.images?.[0]?.url
+    if (!resultImageUrl) {
+      throw new Error(`FASHN returned no image for garment ${i + 1}: ${JSON.stringify(result).substring(0, 200)}`)
+    }
+
+    currentModelUrl = resultImageUrl
+    console.log(`Step ${i + 1} done:`, currentModelUrl.substring(0, 60))
+  }
+
+  // 4. Download final result as base64
+  const finalBase64 = await downloadImageAsBase64(currentModelUrl)
 
   return {
     success: true,
-    images,
-    message: `Generated ${images.length} image(s)!`,
+    images: [{ url: currentModelUrl, base64: finalBase64 }],
+    message: 'Try-on generated!',
   }
 }
 

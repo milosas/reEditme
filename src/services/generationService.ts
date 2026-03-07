@@ -17,8 +17,8 @@ async function isGuestUser(): Promise<boolean> {
  * Resize image to max dimensions and compress as JPEG to keep payload under Supabase body limit.
  * Returns base64 data URL.
  */
-const MAX_IMAGE_DIM = 1536;
-const JPEG_QUALITY = 0.92;
+const MAX_IMAGE_DIM = 1024;
+const JPEG_QUALITY = 0.82;
 
 function resizeAndCompressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -86,12 +86,13 @@ async function urlToCompressedBase64(imageUrl: string): Promise<string> {
 
 /**
  * Send try-on generation request to Supabase Edge Function
- * Uses FASHN v1.6 via fal.ai
+ * Uses FLUX Kontext Max Multi via fal.ai
  */
 export async function generateImages(
   config: Config,
   images: UploadedImage[],
-  signal: AbortSignal
+  signal: AbortSignal,
+  garmentLabels?: (string | null)[]
 ): Promise<GenerationResponse> {
   // Resize & compress clothing images to keep request under Supabase body limit (~6MB)
   const base64Images = await Promise.all(
@@ -111,12 +112,16 @@ export async function generateImages(
         throw new Error('AVATAR_LOAD_FAILED');
       }
     } else {
-      // Use high-res fullImageUrl for FASHN (needs 512px+ for body pose detection)
       avatarImageUrl = config.avatar.fullImageUrl || config.avatar.imageUrl;
     }
   }
 
   const guest = await isGuestUser();
+
+  // Filter out null labels, keep only non-null values aligned with images
+  const filteredLabels = garmentLabels
+    ? garmentLabels.map(l => l ?? undefined).filter((l): l is string => !!l)
+    : undefined;
 
   const requestBody = {
     mode: 'tryon' as const,
@@ -126,6 +131,7 @@ export async function generateImages(
     avatarImageUrl: avatarImageUrl,
     avatarImageBase64: avatarImageBase64,
     avatarIsCustom: config.avatar?.isCustom || false,
+    ...(filteredLabels && filteredLabels.length > 0 ? { garmentLabels: filteredLabels } : {}),
     ...(guest ? { guest: true } : {}),
   };
 
@@ -151,12 +157,8 @@ export async function generateImages(
       if (errorData.error?.includes('AVATAR_UPLOAD_FAILED')) {
         throw new Error('AVATAR_LOAD_FAILED');
       }
-      const errorText = errorData.error || errorData.message || '';
-      if (errorText.toLowerCase().includes('body pose') || errorText.toLowerCase().includes('detect')) {
-        throw new Error('BODY_POSE_ERROR');
-      }
     } catch (parseErr) {
-      if ((parseErr as Error).message?.startsWith('INSUFFICIENT_CREDITS') || (parseErr as Error).message === 'AVATAR_LOAD_FAILED' || (parseErr as Error).message === 'BODY_POSE_ERROR') {
+      if ((parseErr as Error).message?.startsWith('INSUFFICIENT_CREDITS') || (parseErr as Error).message === 'AVATAR_LOAD_FAILED') {
         throw parseErr;
       }
       // If parsing fails, throw generic error

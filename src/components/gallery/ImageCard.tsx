@@ -69,7 +69,7 @@ export function ImageCard({ image, onDelete, onClick, onEdit, onCreatePost }: Im
 
   return (
     <div
-      className={`card-hover group relative rounded-lg overflow-hidden bg-gray-100 cursor-pointer shadow-sm hover:shadow-md transition-all ${
+      className={`card-hover group relative aspect-[3/4] rounded-lg overflow-hidden bg-gray-100 cursor-pointer shadow-sm hover:shadow-md transition-all ${
         deleting ? 'animate-fade-out' : ''
       }`}
       onClick={onClick}
@@ -78,7 +78,7 @@ export function ImageCard({ image, onDelete, onClick, onEdit, onCreatePost }: Im
       <img
         src={image.image_url}
         alt="Generated image"
-        className="w-full object-cover"
+        className="w-full h-full object-cover"
         loading="lazy"
       />
 

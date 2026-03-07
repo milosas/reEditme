@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { UploadedImage } from '../types';
 
-const MAX_FILES = 1;
+const MAX_FILES = 4;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png'];
 
 export function useImageUpload() {
