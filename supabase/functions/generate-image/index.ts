@@ -319,8 +319,8 @@ async function handleTryOn(body: GenerateRequest): Promise<GenerateResponse> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model_image_url: currentModelUrl,
-        garment_image_url: garmentUrls[i],
+        model_image: currentModelUrl,
+        garment_image: garmentUrls[i],
         category,
         garment_photo_type: 'auto',
       }),
