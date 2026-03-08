@@ -19,7 +19,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { stats, recentImages, loading: dashboardLoading, error, refresh } = useDashboard();
-  const { accounts: socialAccounts, fetchAccounts } = useSocialAccounts();
+  const { accounts: socialAccounts, fetchAccounts, syncAccounts } = useSocialAccounts();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
@@ -40,6 +40,13 @@ export default function Dashboard() {
       setCompany(user.user_metadata.company || '');
     }
   }, [user]);
+
+  // Sync social accounts from LATE API on mount
+  useEffect(() => {
+    if (user) {
+      syncAccounts();
+    }
+  }, [user, syncAccounts]);
 
   const handleBlur = (field: 'name' | 'phone' | 'company', value: string) => {
     const error = validateField(profileSchema, field, value);

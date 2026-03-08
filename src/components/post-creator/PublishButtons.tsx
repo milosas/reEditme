@@ -63,10 +63,12 @@ export function PublishButtons({ text, imageUrl }: PublishButtonsProps) {
     isPublishing,
     publishingPlatforms,
     publishResult,
+    error,
     syncAccounts,
     connectAccount,
     publishPost,
     setPublishResult,
+    clearError,
   } = useSocialAccounts();
 
   const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set());
@@ -97,14 +99,28 @@ export function PublishButtons({ text, imageUrl }: PublishButtonsProps) {
   // Handle connect
   const handleConnect = async (platformId: string) => {
     setConnectingPlatform(platformId);
+    clearError();
     try {
-      await connectAccount(platformId);
-      // After OAuth window closes, user should refresh or we poll
-      // For now, sync after a delay
-      setTimeout(() => syncAccounts(), 3000);
+      const popup = await connectAccount(platformId);
+      if (popup) {
+        // Poll for popup closure every 500ms
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            syncAccounts();
+            setConnectingPlatform(null);
+          }
+        }, 500);
+        // Safety timeout: stop polling after 5 minutes
+        setTimeout(() => {
+          clearInterval(checkClosed);
+          setConnectingPlatform(null);
+        }, 300000);
+      } else {
+        // Popup was blocked by browser
+        setConnectingPlatform(null);
+      }
     } catch {
-      // Error already logged in hook
-    } finally {
       setConnectingPlatform(null);
     }
   };
@@ -214,6 +230,23 @@ export function PublishButtons({ text, imageUrl }: PublishButtonsProps) {
           );
         })}
       </div>
+
+      {/* Connection error display */}
+      {error && (
+        <div className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-xl">
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm text-red-600">{error}</span>
+          </div>
+          <button onClick={clearError} className="text-red-400 hover:text-red-600">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Publish button */}
       {hasConnectedAccounts && (
