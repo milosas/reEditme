@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-03-08T08:01:00Z"
-last_activity: 2026-03-08 — Completed 02-02 ErrorMessage redesign, guest credit fix, retry wiring
+last_updated: "2026-03-08T15:18:00Z"
+last_activity: "2026-03-08 -- Completed 03-06 (Frontend social publishing: hook error state, popup.closed polling, Dashboard sync)"
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 26
-  completed_plans: 26
-  percent: 88
+  completed_plans: 29
+  percent: 90
 ---
 
 # Project State: reEDITme.com
@@ -34,17 +34,17 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 
 ## Current Position
 
-**Phase:** 2 of 7 (Try-On Quality) -- COMPLETE
+**Phase:** 3 of 7 (Social Publishing Fix) -- COMPLETE
 **Plan:** 2 of 2 complete
-**Status:** Phase 2 complete, ready for Phase 3
-**Last activity:** 2026-03-08 -- Completed 02-02 (ErrorMessage redesign, guest credit fix, retry wiring)
+**Status:** Phase complete
+**Last activity:** 2026-03-08 -- Completed 03-06 (Frontend social publishing: hook error state, popup.closed polling, Dashboard sync)
 
-Progress: [████████▓░] 88%
+Progress: [██████████] 100%
 
 ## Active Context
 
-**Last action:** Completed 02-02 -- ErrorMessage redesign (persistent overlay, retry/dismiss buttons), guest credit deduction moved to post-success, retry wired end-to-end
-**Next action:** Start Phase 3 (Social Publishing Fix) or any other independent phase
+**Last action:** Completed 03-06 -- useSocialAccounts error state, popup.closed OAuth polling, Dashboard LATE API sync
+**Next action:** Execute Phase 4 plans
 
 ## Uncommitted Work (Phase 1 Priority)
 
@@ -68,6 +68,7 @@ RESOLVED — All 14 files committed in plan 01-05 (commits 9372419, 6de76f0)
 | 2026-03-07 | 01-03 retroactive summary | ConfigPanel already completed in v1 (commit 3d79db9), evolved in v2 |
 | 2026-03-08 | **02-01 executed** | Error types + translations + edge fn classification + service parsing (5bab94b, 6e1ce3f) |
 | 2026-03-08 | **02-02 executed** | ErrorMessage redesign, guest credit fix, retry wiring (056689b, f56c2b6) |
+| 2026-03-08 | **03-06 executed** | useSocialAccounts error state, popup.closed polling, Dashboard sync (a2ba76a, a6a6c59) |
 
 ## Archived Milestones
 
@@ -92,6 +93,8 @@ RESOLVED — All 14 files committed in plan 01-05 (commits 9372419, 6de76f0)
 | Remove auto-dismiss timer from ErrorMessage | Errors must persist until user explicitly dismisses or retries | 02-02 |
 | useRef for retry params instead of useState | Avoids re-render loops when storing last generation params | 02-02 |
 | Guest credits deducted after success only | Prevents credit loss on failed generations | 02-02 |
+| 500ms popup.closed polling for OAuth | Reliable popup detection vs unreliable 3s setTimeout | 03-06 |
+| Error state in hook (single source) | Consumers render error banner, hook owns state | 03-06 |
 
 ## Notes
 
@@ -114,4 +117,4 @@ npx supabase functions deploy generate-image --no-verify-jwt
 ```
 
 ---
-*Last updated: 2026-03-08 (02-02 ErrorMessage redesign, guest credit fix, retry wiring completed)*
+*Last updated: 2026-03-08 (03-06 Frontend social publishing fix completed)*

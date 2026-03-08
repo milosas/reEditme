@@ -10,8 +10,8 @@
 |-------|------|------|--------|
 | 1 | Frontend Foundation | Stabilize uncommitted work, verify features | Complete (6/6) |
 | 2 | Try-On Quality | Improve generation reliability & garment label UX | Complete (2/2) |
-| 3 | Social Publishing Fix | Fix LATE API 400 error, connection flow | Pending |
-| 4 | Credits & Payment Polish | Edge cases, error states, receipts | Pending |
+| 3 | 6/2 | Complete   | 2026-03-08 |
+| 4 | Credits & Payment Polish | Edge cases, error states, receipts | Planned (0/3) |
 | 5 | Landing Page & Conversion | Better examples, copy, onboarding | Pending |
 | 6 | Google OAuth | Enable Google sign-in (carried from v2) | Pending |
 | 7 | Email System | Welcome email, notifications | Pending |
@@ -94,13 +94,19 @@ Plans:
 - Need to verify API key/account status at getlate.dev
 - Connection flow UX unclear
 
+**Requirements:** [SOC-01, SOC-02, SOC-03, SOC-04, SOC-05, SOC-06]
+
 **Success Criteria:**
 1. Social account connection works (Instagram, Facebook)
 2. Publishing flow works end-to-end
 3. Error messages clear when connection fails
 4. Account status visible in dashboard
 
-**Plans:** TBD
+**Plans:** 6/2 plans complete
+
+Plans:
+- [x] 03-05-PLAN.md — Fix edge functions: add profileId to LATE API calls, error classification
+- [ ] 03-06-PLAN.md — Frontend: hook error state, popup.closed polling, Dashboard sync
 
 ---
 
@@ -115,13 +121,20 @@ Plans:
 - Credit transaction history visibility
 - Guest-to-registered credit migration
 
+**Requirements:** [SC-01, SC-02, SC-03, SC-04]
+
 **Success Criteria:**
 1. Payment flow handles all error states gracefully
 2. Credits always accurate (no double-deduction, no free generation)
 3. Users see purchase confirmation
 4. Credit history accessible
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Atomic credit DB functions and shared constants module
+- [ ] 04-02-PLAN.md — Refactor all edge functions to use atomic credits
+- [ ] 04-03-PLAN.md — Payment confirmation UI, transaction history, guest credit migration
 
 ---
 
@@ -208,4 +221,5 @@ Phase 7 (Email) — independent (after Phase 6 if welcome email needed)
 
 ---
 *Roadmap created: 2026-03-07*
-*Phase 2 planned: 2026-03-08*
+*Phase 3 planned: 2026-03-08*
+*Phase 4 planned: 2026-03-08*
