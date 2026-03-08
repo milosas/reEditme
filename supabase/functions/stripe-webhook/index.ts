@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { addCredits } from '../_shared/credits.ts'
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')
 const STRIPE_WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET')
@@ -56,35 +57,8 @@ serve(async (req) => {
             break
           }
 
-          // Add credits to profile
-          const { error: updateError } = await supabase.rpc('increment_credits', {
-            p_user_id: userId,
-            p_amount: creditsAmount,
-          }).maybeSingle()
-
-          // Fallback: direct update if RPC doesn't exist
-          if (updateError) {
-            console.log('RPC not available, using direct update')
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('credits')
-              .eq('id', userId)
-              .single()
-
-            await supabase
-              .from('profiles')
-              .update({ credits: (profile?.credits || 0) + creditsAmount })
-              .eq('id', userId)
-          }
-
-          // Log transaction
-          await supabase.from('credit_transactions').insert({
-            user_id: userId,
-            amount: creditsAmount,
-            type: 'purchase',
-            description: `Nusipirkta ${creditsAmount} kreditu`,
-            stripe_session_id: session.id,
-          })
+          // Add credits atomically (handles both increment and transaction logging)
+          await addCredits(supabase, userId, creditsAmount, `Nusipirkta ${creditsAmount} kreditu`, 'purchase', session.id)
 
           // Save stripe customer ID if present
           if (session.customer) {
