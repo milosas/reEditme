@@ -19,6 +19,7 @@ export function useGeneration() {
   const [creditError, setCreditError] = useState<{ required: number; balance: number } | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const progressTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const lastParamsRef = useRef<{ config: Config; images: UploadedImage[]; garmentLabels?: (string | null)[] } | null>(null);
   const { user } = useAuth();
   const { isGuest, deductGuestCredits, balance: guestBalance } = useCredits();
   const { saveGeneratedImage } = useSupabaseStorage();
@@ -32,6 +33,9 @@ export function useGeneration() {
   }, []);
 
   const generate = useCallback(async (config: Config, images: UploadedImage[], garmentLabels?: (string | null)[]) => {
+    // Store params for retry
+    lastParamsRef.current = { config, images, garmentLabels };
+
     // Create new AbortController for this request
     abortControllerRef.current = new AbortController();
 
@@ -79,17 +83,10 @@ export function useGeneration() {
     progressTimersRef.current = [timer1, timer2, timer3];
 
     try {
-      // Guest credit check: deduct on frontend before calling edge function
+      // Guest credit CHECK only — deduction happens after success
       if (isGuest) {
         const TRYON_COST = 3;
         if (guestBalance < TRYON_COST) {
-          setCreditError({ required: TRYON_COST, balance: guestBalance });
-          setState({ status: 'error', progress: 'sending', results: null, error: 'INSUFFICIENT_CREDITS' });
-          progressTimersRef.current.forEach(timer => clearTimeout(timer));
-          return;
-        }
-        const success = deductGuestCredits(TRYON_COST);
-        if (!success) {
           setCreditError({ required: TRYON_COST, balance: guestBalance });
           setState({ status: 'error', progress: 'sending', results: null, error: 'INSUFFICIENT_CREDITS' });
           progressTimersRef.current.forEach(timer => clearTimeout(timer));
@@ -112,6 +109,12 @@ export function useGeneration() {
           results: data.images,
           error: null
         });
+
+        // Deduct guest credits AFTER successful generation
+        if (isGuest) {
+          const TRYON_COST = 3;
+          deductGuestCredits(TRYON_COST);
+        }
         notifyCreditChange();
 
         // Save to Supabase if user is authenticated
@@ -169,6 +172,10 @@ export function useGeneration() {
         errorType = 'API_ERROR';
       } else if (error.message === 'AVATAR_LOAD_FAILED') {
         errorType = 'AVATAR_LOAD_FAILED';
+      } else if (error.message === 'BAD_IMAGE') {
+        errorType = 'BAD_IMAGE';
+      } else if (error.message === 'RATE_LIMIT') {
+        errorType = 'RATE_LIMIT';
       } else {
         errorType = 'NETWORK';
       }
@@ -197,12 +204,20 @@ export function useGeneration() {
 
   const clearCreditError = useCallback(() => setCreditError(null), []);
 
+  const retry = useCallback(() => {
+    if (lastParamsRef.current) {
+      const { config, images, garmentLabels } = lastParamsRef.current;
+      generate(config, images, garmentLabels);
+    }
+  }, [generate]);
+
   return {
     state,
     creditError,
     clearCreditError,
     generate,
     cancel,
-    reset
+    reset,
+    retry
   };
 }

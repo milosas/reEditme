@@ -63,7 +63,7 @@ export default function Generator() {
   };
 
   // Generation state
-  const { state, creditError, clearCreditError, generate, cancel, reset } = useGeneration();
+  const { state, creditError, clearCreditError, generate, cancel, reset, retry } = useGeneration();
 
   // Post-processing state
   const [selectedResultIndex, setSelectedResultIndex] = useState(0);
@@ -406,7 +406,7 @@ export default function Generator() {
 
       {/* Error Overlay - skip for insufficient credits since we show the modal */}
       {state.status === 'error' && state.error && state.error !== 'INSUFFICIENT_CREDITS' && (
-        <ErrorMessage errorType={state.error} onDismiss={handleErrorDismiss} />
+        <ErrorMessage errorType={state.error} onDismiss={handleErrorDismiss} onRetry={retry} />
       )}
 
       {/* Insufficient credits modal */}
