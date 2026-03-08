@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useAuth } from '../hooks/useAuth';
 import { useDashboard } from '../hooks/useDashboard';
+import { useCredits } from '../hooks/useCredits';
 import { useSocialAccounts } from '../hooks/useSocialAccounts';
 import { useLanguage } from '../contexts/LanguageContext';
 import type { Translations } from '../i18n/translations';
@@ -19,10 +20,14 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { stats, recentImages, loading: dashboardLoading, error, refresh } = useDashboard();
+  const { transactions, refresh: refreshCredits } = useCredits();
   const { accounts: socialAccounts, fetchAccounts, syncAccounts } = useSocialAccounts();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
+  const [paymentMessage, setPaymentMessage] = useState<{ text: string; type: 'success' | 'cancelled' } | null>(null);
+  const [transactionsExpanded, setTransactionsExpanded] = useState(false);
+  const [transactionsShowAll, setTransactionsShowAll] = useState(false);
 
   // Personal info state
   const [name, setName] = useState('');
@@ -47,6 +52,23 @@ export default function Dashboard() {
       syncAccounts();
     }
   }, [user, syncAccounts]);
+
+  // Payment URL param detection (Stripe redirect)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get('payment');
+    if (payment === 'success') {
+      setPaymentMessage({ text: dashboard?.payment?.success || 'Payment successful! Credits added.', type: 'success' });
+      window.history.replaceState({}, '', '/dashboard');
+      setTimeout(() => refreshCredits(), 2000);
+      setTimeout(() => setPaymentMessage(null), 5000);
+    } else if (payment === 'cancelled') {
+      setPaymentMessage({ text: dashboard?.payment?.cancelled || 'Payment cancelled.', type: 'cancelled' });
+      window.history.replaceState({}, '', '/dashboard');
+      setTimeout(() => setPaymentMessage(null), 4000);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleBlur = (field: 'name' | 'phone' | 'company', value: string) => {
     const error = validateField(profileSchema, field, value);
@@ -169,6 +191,17 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
+      {/* Payment toast */}
+      {paymentMessage && (
+        <div className={`mb-4 px-4 py-3 rounded-xl text-sm font-medium ${
+          paymentMessage.type === 'success'
+            ? 'bg-green-50 text-green-700 border border-green-200'
+            : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+        }`}>
+          {paymentMessage.text}
+        </div>
+      )}
+
       {/* Section 1: Welcome + CTA */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-8">
         <div>
@@ -246,6 +279,78 @@ export default function Dashboard() {
           />
         </StaggerItem>
       </StaggerContainer>
+
+      {/* Section 2.5: Credit Transaction History */}
+      <div className="bg-white border border-[#E5E5E3] rounded-2xl p-5 mb-6 md:mb-8">
+        <button
+          onClick={() => setTransactionsExpanded(!transactionsExpanded)}
+          className="w-full flex items-center justify-between"
+        >
+          <h2 className="text-lg font-semibold text-[#1A1A1A]">
+            {dashboard?.transactions?.title || 'Credit History'}
+          </h2>
+          <svg
+            className={`w-5 h-5 text-[#666666] transition-transform ${transactionsExpanded ? 'rotate-180' : ''}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {transactionsExpanded && (
+          <div className="mt-4">
+            {transactions.length > 0 ? (
+              <>
+                <div className="space-y-2">
+                  {(transactionsShowAll ? transactions : transactions.slice(0, 10)).map((tx) => (
+                    <div key={tx.id} className="flex items-center justify-between py-2 px-3 bg-[#F7F7F5] rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                          tx.type === 'usage'
+                            ? 'bg-red-50 text-red-500'
+                            : 'bg-green-50 text-green-500'
+                        }`}>
+                          {tx.type === 'usage' ? '-' : '+'}
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-[#1A1A1A]">
+                            {tx.description || (
+                              tx.type === 'purchase' ? (dashboard?.transactions?.purchase || 'Purchase') :
+                              tx.type === 'usage' ? (dashboard?.transactions?.usage || 'Usage') :
+                              (dashboard?.transactions?.bonus || 'Bonus')
+                            )}
+                          </span>
+                          <p className="text-xs text-[#999]">
+                            {new Date(tx.created_at).toLocaleDateString('lt-LT')}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`text-sm font-semibold ${
+                        tx.type === 'usage' ? 'text-red-500' : 'text-green-600'
+                      }`}>
+                        {tx.type === 'usage' ? '' : '+'}{tx.amount} {dashboard?.transactions?.credits || 'cr.'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {transactions.length > 10 && (
+                  <button
+                    onClick={() => setTransactionsShowAll(!transactionsShowAll)}
+                    className="mt-3 text-sm text-[#FF6B35] hover:text-[#E55A2B] font-medium"
+                  >
+                    {transactionsShowAll
+                      ? (dashboard?.transactions?.showLess || 'Show less')
+                      : (dashboard?.transactions?.showAll || 'Show all')}
+                  </button>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-[#999] text-center py-4">
+                {dashboard?.transactions?.empty || 'No transactions'}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Section 3: Recent Creations */}
       <div className="mb-6 md:mb-8">

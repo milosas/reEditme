@@ -486,6 +486,20 @@ export const translations = {
         socialPosts: 'Socialinių tinklų įrašai',
         postCount: 'įrašas(-ai)',
         createPost: 'Kurti įrašą'
+      },
+      payment: {
+        success: 'Mokejimas pavyko! Kreditai prideti.',
+        cancelled: 'Mokejimas atsauktas.'
+      },
+      transactions: {
+        title: 'Kreditu istorija',
+        purchase: 'Pirkimas',
+        usage: 'Naudojimas',
+        bonus: 'Bonusas',
+        credits: 'kr.',
+        empty: 'Nera transakciju',
+        showAll: 'Rodyti visas',
+        showLess: 'Rodyti maziau'
       }
     },
     landing: {
@@ -1183,6 +1197,20 @@ export const translations = {
         socialPosts: 'Sociālo tīklu ieraksti',
         postCount: 'ieraksts(-i)',
         createPost: 'Izveidot ierakstu'
+      },
+      payment: {
+        success: 'Maksajums veiksmigs! Krediti pievienoti.',
+        cancelled: 'Maksajums atcelts.'
+      },
+      transactions: {
+        title: 'Kreditu vesture',
+        purchase: 'Pirkums',
+        usage: 'Lietojums',
+        bonus: 'Bonuss',
+        credits: 'kr.',
+        empty: 'Nav transakciju',
+        showAll: 'Radit visas',
+        showLess: 'Radit mazak'
       }
     },
     landing: {
@@ -1880,6 +1908,20 @@ export const translations = {
         socialPosts: 'Sotsiaalmeedia postitused',
         postCount: 'postitus(ed)',
         createPost: 'Loo postitus'
+      },
+      payment: {
+        success: 'Makse onnestus! Krediidid lisatud.',
+        cancelled: 'Makse tühistatud.'
+      },
+      transactions: {
+        title: 'Krediidi ajalugu',
+        purchase: 'Ost',
+        usage: 'Kasutamine',
+        bonus: 'Boonus',
+        credits: 'kr.',
+        empty: 'Tehinguid pole',
+        showAll: 'Näita koiki',
+        showLess: 'Näita vähem'
       }
     },
     landing: {
@@ -2577,6 +2619,20 @@ export const translations = {
         socialPosts: 'Social Media Posts',
         postCount: 'post(s)',
         createPost: 'Create Post'
+      },
+      payment: {
+        success: 'Payment successful! Credits added.',
+        cancelled: 'Payment cancelled.'
+      },
+      transactions: {
+        title: 'Credit History',
+        purchase: 'Purchase',
+        usage: 'Usage',
+        bonus: 'Bonus',
+        credits: 'cr.',
+        empty: 'No transactions',
+        showAll: 'Show all',
+        showLess: 'Show less'
       }
     },
     landing: {

@@ -4,11 +4,19 @@ import { useAuth } from './useAuth';
 
 export type CreditAction = 'model_photo' | 'tryon_photo' | 'post_image' | 'post_text' | 'text_from_image';
 
+export interface CreditTransaction {
+  id: string;
+  amount: number;
+  type: 'purchase' | 'usage' | 'bonus';
+  description: string | null;
+  created_at: string;
+}
+
 const CREDITS_CHANGED_EVENT = 'credits-changed';
 const GUEST_CREDITS_KEY = 'reeditme_guest_credits';
 const GUEST_CREDITS_DEFAULT = 5;
 
-const CREDIT_COSTS: Record<CreditAction, number> = {
+export const CREDIT_COSTS: Record<CreditAction, number> = {
   model_photo: 4,
   tryon_photo: 3,
   post_image: 3,
@@ -54,10 +62,28 @@ interface CheckCreditsResult {
 export function useCredits() {
   const { user } = useAuth();
   const [balance, setBalance] = useState<number>(0);
+  const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [socialSubscriptionActive, setSocialSubscriptionActive] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const isGuest = !user;
+
+  const fetchTransactions = useCallback(async () => {
+    if (!user) {
+      setTransactions([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('credit_transactions')
+      .select('id, amount, type, description, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (!error && data) {
+      setTransactions(data as CreditTransaction[]);
+    }
+  }, [user]);
 
   const fetchBalance = useCallback(async () => {
     if (!user) {
@@ -79,7 +105,8 @@ export function useCredits() {
       setSocialSubscriptionActive(data.social_subscription_active ?? false);
     }
     setLoading(false);
-  }, [user]);
+    fetchTransactions();
+  }, [user, fetchTransactions]);
 
   useEffect(() => {
     fetchBalance();
@@ -200,6 +227,7 @@ export function useCredits() {
 
   return {
     balance,
+    transactions,
     socialSubscriptionActive,
     loading,
     isGuest,
