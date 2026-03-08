@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-03-08T15:18:00Z"
-last_activity: "2026-03-08 -- Completed 03-06 (Frontend social publishing: hook error state, popup.closed polling, Dashboard sync)"
+last_updated: "2026-03-08T16:27:30Z"
+last_activity: "2026-03-08 -- Completed 04-01 (Atomic credit DB functions and shared constants module)"
 progress:
-  total_phases: 7
+  total_phases: 8
   completed_phases: 6
-  total_plans: 26
-  completed_plans: 29
-  percent: 90
+  total_plans: 29
+  completed_plans: 30
+  percent: 100
 ---
 
 # Project State: reEDITme.com
@@ -34,17 +34,17 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 
 ## Current Position
 
-**Phase:** 3 of 7 (Social Publishing Fix) -- COMPLETE
-**Plan:** 2 of 2 complete
-**Status:** Phase complete
-**Last activity:** 2026-03-08 -- Completed 03-06 (Frontend social publishing: hook error state, popup.closed polling, Dashboard sync)
+**Phase:** 4 of 7 (Credits & Payment Polish) -- IN PROGRESS
+**Plan:** 1 of 3 complete
+**Status:** Executing
+**Last activity:** 2026-03-08 -- Completed 04-01 (Atomic credit DB functions and shared constants module)
 
-Progress: [██████████] 100%
+Progress: [██████████] 97%
 
 ## Active Context
 
-**Last action:** Completed 03-06 -- useSocialAccounts error state, popup.closed OAuth polling, Dashboard LATE API sync
-**Next action:** Execute Phase 4 plans
+**Last action:** Completed 04-01 -- Atomic deduct_credits/increment_credits RPC with FOR UPDATE locking, shared _shared/credits.ts module
+**Next action:** Execute 04-02 (Refactor all edge functions to use atomic credits)
 
 ## Uncommitted Work (Phase 1 Priority)
 
@@ -69,6 +69,7 @@ RESOLVED — All 14 files committed in plan 01-05 (commits 9372419, 6de76f0)
 | 2026-03-08 | **02-01 executed** | Error types + translations + edge fn classification + service parsing (5bab94b, 6e1ce3f) |
 | 2026-03-08 | **02-02 executed** | ErrorMessage redesign, guest credit fix, retry wiring (056689b, f56c2b6) |
 | 2026-03-08 | **03-06 executed** | useSocialAccounts error state, popup.closed polling, Dashboard sync (a2ba76a, a6a6c59) |
+| 2026-03-08 | **04-01 executed** | Atomic credit RPC functions + shared credits module (7b8d73a, 0769c97) |
 
 ## Archived Milestones
 
@@ -95,6 +96,8 @@ RESOLVED — All 14 files committed in plan 01-05 (commits 9372419, 6de76f0)
 | Guest credits deducted after success only | Prevents credit loss on failed generations | 02-02 |
 | 500ms popup.closed polling for OAuth | Reliable popup detection vs unreliable 3s setTimeout | 03-06 |
 | Error state in hook (single source) | Consumers render error banner, hook owns state | 03-06 |
+| Atomic RPC credit functions with FOR UPDATE | Prevents race conditions on concurrent deductions | 04-01 |
+| Shared _shared/credits.ts module | Centralizes credit costs from 7+ hardcoded locations | 04-01 |
 
 ## Notes
 
@@ -117,4 +120,4 @@ npx supabase functions deploy generate-image --no-verify-jwt
 ```
 
 ---
-*Last updated: 2026-03-08 (03-06 Frontend social publishing fix completed)*
+*Last updated: 2026-03-08 (04-01 Atomic credit DB functions completed)*
