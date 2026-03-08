@@ -581,17 +581,32 @@ serve(async (req) => {
 
   } catch (error) {
     const mode = body?.mode || 'unknown'
+    const msg = (error.message || '').toLowerCase()
     console.error(`Error in mode=${mode}:`, error.message)
+
+    let status = 400
+    let errorCode = `[${mode}] ${error.message}`
+
+    if (/rate.?limit|429|too many/i.test(msg)) {
+      status = 429
+      errorCode = 'RATE_LIMIT'
+    } else if (/timeout|timed?\s*out|deadline/i.test(msg)) {
+      status = 408
+      errorCode = 'TIMEOUT'
+    } else if (/invalid.?image|image.?validation|nsfw|could not process/i.test(msg)) {
+      status = 422
+      errorCode = 'BAD_IMAGE'
+    }
 
     const response: GenerateResponse = {
       success: false,
       images: [],
       message: error.message || 'Generation failed',
-      error: `[${mode}] ${error.message}`,
+      error: errorCode,
     }
 
     return new Response(JSON.stringify(response), {
-      status: 400,
+      status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }

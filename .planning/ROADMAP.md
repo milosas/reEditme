@@ -9,7 +9,7 @@
 | Phase | Name | Goal | Status |
 |-------|------|------|--------|
 | 1 | Frontend Foundation | Stabilize uncommitted work, verify features | Complete (6/6) |
-| 2 | Try-On Quality | Improve generation reliability & garment label UX | Pending |
+| 2 | Try-On Quality | Improve generation reliability & garment label UX | Planning (2 plans) |
 | 3 | Social Publishing Fix | Fix LATE API 400 error, connection flow | Pending |
 | 4 | Credits & Payment Polish | Edge cases, error states, receipts | Pending |
 | 5 | Landing Page & Conversion | Better examples, copy, onboarding | Pending |
@@ -63,7 +63,7 @@ Plans:
 
 ## Phase 2: Try-On Quality
 
-**Goal:** Improve try-on generation reliability and garment label UX polish
+**Goal:** Improve error handling reliability with specific error types, retry functionality, and guest credit fix
 
 **Known issues:**
 - Garment label picker UX may need polish after Phase 1 commit
@@ -72,12 +72,16 @@ Plans:
 - Try-on result quality varies
 
 **Success Criteria:**
-1. Garment label picker intuitive and clear
-2. Error messages actionable (user knows what to fix)
-3. Generation success rate improved
-4. Loading states and progress accurate
+1. Error messages actionable (user knows what to fix)
+2. Retry button works without additional credit cost
+3. Guest credits only deducted on successful generation
+4. Specific error types for bad image, rate limit, timeout
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Error types, translations, edge fn classification, service parsing
+- [ ] 02-02-PLAN.md — ErrorMessage redesign, guest credit fix, retry wiring
 
 ---
 
@@ -204,3 +208,4 @@ Phase 7 (Email) — independent (after Phase 6 if welcome email needed)
 
 ---
 *Roadmap created: 2026-03-07*
+*Phase 2 planned: 2026-03-08*

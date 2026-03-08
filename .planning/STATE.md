@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 last_updated: "2026-03-07T19:46:19.872Z"
-last_activity: 2026-03-07 — Completed 01-02 retroactive summary (UI components + upload system)
+last_activity: 2026-03-07 — Completed 01-03 retroactive summary (configuration panel)
 progress:
   total_phases: 7
   completed_phases: 5
@@ -65,6 +65,7 @@ RESOLVED — All 14 files committed in plan 01-05 (commits 9372419, 6de76f0)
 | 2026-03-07 | **01-05 executed** | Fixed TS build, committed 14 files (9372419, 6de76f0) |
 | 2026-03-07 | 01-02 retroactive summary | Plan already completed in v1 (commit 3d79db9) |
 | 2026-03-07 | **01-06 executed** | Edge fn deployed, FASHN field fix (2b152dc), all features verified |
+| 2026-03-07 | 01-03 retroactive summary | ConfigPanel already completed in v1 (commit 3d79db9), evolved in v2 |
 
 ## Archived Milestones
 
@@ -82,6 +83,8 @@ RESOLVED — All 14 files committed in plan 01-05 (commits 9372419, 6de76f0)
 | framer-motion for Button | Added animation micro-interactions beyond CSS | Retroactive (01-02) |
 | LanguageContext over direct imports | Runtime language switching via useLanguage() hook | Retroactive (01-02) |
 | FASHN field names: model_image not model_image_url | API mismatch discovered during deployment testing | Fixed in 2b152dc |
+| Avatar grid cards over Select dropdown | Visual grid with thumbnails better UX for browsing avatars | Retroactive (01-03) |
+| Quality mode pills replaced scene/style selects | Design evolved: scenes moved to post-processing, styles removed | Retroactive (01-03) |
 
 ## Notes
 
@@ -104,4 +107,4 @@ npx supabase functions deploy generate-image --no-verify-jwt
 ```
 
 ---
-*Last updated: 2026-03-07 (GSD reconstructed for v3)*
+*Last updated: 2026-03-07 (01-03 retroactive summary added)*

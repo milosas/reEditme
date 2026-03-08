@@ -86,6 +86,10 @@ export const translations = {
       avatarLoad: 'Nepavyko įkelti modelio nuotraukos. Bandykite dar kartą.',
       insufficientCredits: 'Nepakanka kreditų. Papildykite kreditų balansą.',
       bodyPose: 'Modelio nuotraukoje nepavyko aptikti kūno pozos. Pasirinkite nuotrauką, kurioje matosi visas kūnas (ypač kojos, jei norite matuotis kelnes).',
+      badImage: 'Pabandykite aiškesnę nuotrauką.',
+      rateLimit: 'Per daug užklausų. Palaukite minutę ir bandykite dar kartą.',
+      retry: 'Bandyti dar kartą',
+      dismiss: 'Uždaryti',
       default: 'Įvyko klaida. Bandykite dar kartą.'
     },
     footer: 'reEDITme',
@@ -781,6 +785,10 @@ export const translations = {
       avatarLoad: 'Neizdevās ielādēt modeļa attēlu. Mēģiniet vēlreiz.',
       insufficientCredits: 'Nepietiek kredītu. Papildiniet kredītu atlikumu.',
       bodyPose: 'Neizdevās noteikt ķermeņa pozu modeļa attēlā. Izvēlieties attēlu, kurā redzams viss ķermenis (īpaši kājas, ja vēlaties pielaikot bikses).',
+      badImage: 'Mēģiniet skaidrāku attēlu.',
+      rateLimit: 'Par daudz pieprasījumu. Uzgaidiet minūti un mēģiniet vēlreiz.',
+      retry: 'Mēģināt vēlreiz',
+      dismiss: 'Aizvērt',
       default: 'Radās kļūda. Mēģiniet vēlreiz.'
     },
     footer: 'reEDITme',
@@ -1474,6 +1482,10 @@ export const translations = {
       avatarLoad: 'Mudeli pildi laadimine ebaõnnestus. Proovige uuesti.',
       insufficientCredits: 'Krediiti pole piisavalt. Täiendage oma krediidijääki.',
       bodyPose: 'Mudeli fotol ei õnnestunud kehapoosi tuvastada. Valige foto, kus on näha kogu keha (eriti jalad, kui soovite proovida pükse).',
+      badImage: 'Proovige selgemat fotot.',
+      rateLimit: 'Liiga palju päringuid. Oodake minut ja proovige uuesti.',
+      retry: 'Proovi uuesti',
+      dismiss: 'Sulge',
       default: 'Tekkis viga. Proovige uuesti.'
     },
     footer: 'reEDITme',
@@ -2167,6 +2179,10 @@ export const translations = {
       avatarLoad: 'Failed to load model image. Please try again.',
       insufficientCredits: 'Insufficient credits. Please top up your credit balance.',
       bodyPose: 'Could not detect body pose in the model photo. Choose a photo showing the full body (especially legs for pants/jeans).',
+      badImage: 'Try a clearer photo.',
+      rateLimit: 'Too many requests. Wait a minute and try again.',
+      retry: 'Try again',
+      dismiss: 'Dismiss',
       default: 'An error occurred. Please try again.'
     },
     footer: 'reEDITme',
