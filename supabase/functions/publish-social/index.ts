@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const LATE_API_KEY = Deno.env.get('LATE_API_KEY')
+const LATE_PROFILE_ID = Deno.env.get('LATE_PROFILE_ID')
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,6 +14,39 @@ interface PublishRequest {
   platforms: { platform: string; accountId: string }[]
 }
 
+function classifyLateError(status: number, errorText: string): Response {
+  const headers = { ...corsHeaders, 'Content-Type': 'application/json' }
+
+  if (status === 401) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'API autorizacija nepavyko.', code: 'AUTH_FAILED' }),
+      { status: 401, headers }
+    )
+  }
+  if (status === 400) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Neteisingi skelbimo duomenys: ' + errorText, code: 'BAD_REQUEST' }),
+      { status: 400, headers }
+    )
+  }
+  if (status === 403) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Skelbimo teisės nepakankamos.', code: 'FORBIDDEN' }),
+      { status: 403, headers }
+    )
+  }
+  if (status === 429) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Per daug užklausų. Palaukite ir bandykite vėliau.', code: 'RATE_LIMIT' }),
+      { status: 429, headers }
+    )
+  }
+  return new Response(
+    JSON.stringify({ success: false, error: 'Skelbimo klaida: ' + errorText, code: 'API_ERROR' }),
+    { status, headers }
+  )
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -21,6 +55,13 @@ serve(async (req) => {
   try {
     if (!LATE_API_KEY) {
       throw new Error('LATE_API_KEY not configured')
+    }
+
+    if (!LATE_PROFILE_ID) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'LATE_PROFILE_ID not configured', code: 'INTERNAL_ERROR' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     const body: PublishRequest = await req.json()
@@ -34,6 +75,7 @@ serve(async (req) => {
 
     // Build LATE API request
     const latePayload: Record<string, unknown> = {
+      profileId: LATE_PROFILE_ID,
       content: body.text,
       publishNow: true,
       platforms: body.platforms.map(p => ({
@@ -61,7 +103,7 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('LATE API error:', response.status, errorText)
-      throw new Error(`LATE API error: ${response.status} - ${errorText}`)
+      return classifyLateError(response.status, errorText)
     }
 
     const result = await response.json()
@@ -74,7 +116,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Publish social error:', error.message)
     return new Response(
-      JSON.stringify({ success: false, error: error.message || 'Skelbimo klaida. Bandykite dar kartą.' }),
+      JSON.stringify({ success: false, error: error.message || 'Skelbimo klaida. Bandykite dar kartą.', code: 'INTERNAL_ERROR' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
