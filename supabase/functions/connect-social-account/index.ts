@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const LATE_API_KEY = Deno.env.get('LATE_API_KEY')
+const LATE_PROFILE_ID = Deno.env.get('LATE_PROFILE_ID')
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +11,40 @@ const corsHeaders = {
 interface ConnectRequest {
   action: 'get-auth-url' | 'list-accounts'
   platform?: string
+  redirectUrl?: string
+}
+
+function classifyLateError(status: number, errorText: string): Response {
+  const headers = { ...corsHeaders, 'Content-Type': 'application/json' }
+
+  if (status === 401) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'API autorizacija nepavyko. Patikrinkite API raktą.', code: 'AUTH_FAILED' }),
+      { status: 401, headers }
+    )
+  }
+  if (status === 400) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Neteisingi duomenys: ' + errorText, code: 'BAD_REQUEST' }),
+      { status: 400, headers }
+    )
+  }
+  if (status === 403) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Prieiga uždrausta. Patikrinkite paskyros teises.', code: 'FORBIDDEN' }),
+      { status: 403, headers }
+    )
+  }
+  if (status === 429) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Per daug užklausų. Palaukite ir bandykite vėliau.', code: 'RATE_LIMIT' }),
+      { status: 429, headers }
+    )
+  }
+  return new Response(
+    JSON.stringify({ success: false, error: 'LATE API klaida: ' + errorText, code: 'API_ERROR' }),
+    { status, headers }
+  )
 }
 
 serve(async (req) => {
@@ -20,6 +55,13 @@ serve(async (req) => {
   try {
     if (!LATE_API_KEY) {
       throw new Error('LATE_API_KEY not configured')
+    }
+
+    if (!LATE_PROFILE_ID) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'LATE_PROFILE_ID not configured', code: 'INTERNAL_ERROR' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     const body: ConnectRequest = await req.json()
@@ -39,9 +81,13 @@ serve(async (req) => {
         )
       }
 
+      const redirectUrl = body.redirectUrl || 'https://reeditme.com/oauth-callback'
+
       console.log('Getting auth URL for platform:', body.platform)
 
-      const response = await fetch(`https://getlate.dev/api/v1/connect/${body.platform}`, {
+      const connectUrl = `https://getlate.dev/api/v1/connect/${body.platform}?profileId=${LATE_PROFILE_ID}&redirectUrl=${encodeURIComponent(redirectUrl)}`
+
+      const response = await fetch(connectUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${LATE_API_KEY}`,
@@ -51,7 +97,7 @@ serve(async (req) => {
       if (!response.ok) {
         const errorText = await response.text()
         console.error('LATE API connect error:', response.status, errorText)
-        throw new Error(`LATE API error: ${response.status}`)
+        return classifyLateError(response.status, errorText)
       }
 
       const result = await response.json()
@@ -75,7 +121,7 @@ serve(async (req) => {
       if (!response.ok) {
         const errorText = await response.text()
         console.error('LATE API accounts error:', response.status, errorText)
-        throw new Error(`LATE API error: ${response.status}`)
+        return classifyLateError(response.status, errorText)
       }
 
       const result = await response.json()
@@ -93,7 +139,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Connect social account error:', error.message)
     return new Response(
-      JSON.stringify({ success: false, error: error.message || 'Prisijungimo klaida. Bandykite dar kartą.' }),
+      JSON.stringify({ success: false, error: error.message || 'Prisijungimo klaida. Bandykite dar kartą.', code: 'INTERNAL_ERROR' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
