@@ -149,20 +149,35 @@ export async function generateImages(
   });
 
   if (!response.ok) {
+    // Try to parse error body
+    let errorData: { error?: string; required?: number; balance?: number } | null = null;
     try {
-      const errorData = await response.json();
-      if (response.status === 402 && errorData.error === 'insufficient_credits') {
-        throw new Error(`INSUFFICIENT_CREDITS:${errorData.required}:${errorData.balance}`);
-      }
-      if (errorData.error?.includes('AVATAR_UPLOAD_FAILED')) {
-        throw new Error('AVATAR_LOAD_FAILED');
-      }
-    } catch (parseErr) {
-      if ((parseErr as Error).message?.startsWith('INSUFFICIENT_CREDITS') || (parseErr as Error).message === 'AVATAR_LOAD_FAILED') {
-        throw parseErr;
-      }
-      // If parsing fails, throw generic error
+      errorData = await response.json();
+    } catch {
+      // JSON parse failed — fall through to status-based mapping
     }
+
+    // Existing: 402 insufficient credits
+    if (response.status === 402 && errorData?.error === 'insufficient_credits') {
+      throw new Error(`INSUFFICIENT_CREDITS:${errorData.required}:${errorData.balance}`);
+    }
+
+    // Existing: avatar upload failure
+    if (errorData?.error?.includes('AVATAR_UPLOAD_FAILED')) {
+      throw new Error('AVATAR_LOAD_FAILED');
+    }
+
+    // New: map specific HTTP status codes to error types
+    if (response.status === 429 || errorData?.error === 'RATE_LIMIT') {
+      throw new Error('RATE_LIMIT');
+    }
+    if (response.status === 408 || errorData?.error === 'TIMEOUT') {
+      throw new Error('TIMEOUT');
+    }
+    if (response.status === 422 || errorData?.error === 'BAD_IMAGE') {
+      throw new Error('BAD_IMAGE');
+    }
+
     throw new Error('API_ERROR');
   }
 
