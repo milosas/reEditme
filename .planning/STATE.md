@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-03-08T07:49:27Z"
-last_activity: 2026-03-08 — Completed 02-01 error types, translations, edge fn classification
+last_updated: "2026-03-08T08:01:00Z"
+last_activity: 2026-03-08 — Completed 02-02 ErrorMessage redesign, guest credit fix, retry wiring
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 26
-  completed_plans: 25
-  percent: 85
+  completed_plans: 26
+  percent: 88
 ---
 
 # Project State: reEDITme.com
@@ -34,17 +34,17 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 
 ## Current Position
 
-**Phase:** 2 of 7 (Try-On Quality) -- IN PROGRESS
-**Plan:** 1 of 2 complete
-**Status:** Phase 2 started, plan 02-01 complete
-**Last activity:** 2026-03-08 -- Completed 02-01 (error types, translations, edge fn classification)
+**Phase:** 2 of 7 (Try-On Quality) -- COMPLETE
+**Plan:** 2 of 2 complete
+**Status:** Phase 2 complete, ready for Phase 3
+**Last activity:** 2026-03-08 -- Completed 02-02 (ErrorMessage redesign, guest credit fix, retry wiring)
 
-Progress: [████████░░] 85%
+Progress: [████████▓░] 88%
 
 ## Active Context
 
-**Last action:** Completed 02-01 -- added BAD_IMAGE/RATE_LIMIT error types, 4-language translations, edge fn error classification (429/408/422), service HTTP-to-ErrorType mapping
-**Next action:** Execute 02-02 (ErrorMessage redesign, guest credit fix, retry wiring)
+**Last action:** Completed 02-02 -- ErrorMessage redesign (persistent overlay, retry/dismiss buttons), guest credit deduction moved to post-success, retry wired end-to-end
+**Next action:** Start Phase 3 (Social Publishing Fix) or any other independent phase
 
 ## Uncommitted Work (Phase 1 Priority)
 
@@ -67,6 +67,7 @@ RESOLVED — All 14 files committed in plan 01-05 (commits 9372419, 6de76f0)
 | 2026-03-07 | **01-06 executed** | Edge fn deployed, FASHN field fix (2b152dc), all features verified |
 | 2026-03-07 | 01-03 retroactive summary | ConfigPanel already completed in v1 (commit 3d79db9), evolved in v2 |
 | 2026-03-08 | **02-01 executed** | Error types + translations + edge fn classification + service parsing (5bab94b, 6e1ce3f) |
+| 2026-03-08 | **02-02 executed** | ErrorMessage redesign, guest credit fix, retry wiring (056689b, f56c2b6) |
 
 ## Archived Milestones
 
@@ -88,6 +89,9 @@ RESOLVED — All 14 files committed in plan 01-05 (commits 9372419, 6de76f0)
 | Quality mode pills replaced scene/style selects | Design evolved: scenes moved to post-processing, styles removed | Retroactive (01-03) |
 | Regex error classification in edge fn | Flexible pattern matching catches upstream API error variations | 02-01 |
 | Separate JSON parse from error classification | Cleaner control flow in generationService error handling | 02-01 |
+| Remove auto-dismiss timer from ErrorMessage | Errors must persist until user explicitly dismisses or retries | 02-02 |
+| useRef for retry params instead of useState | Avoids re-render loops when storing last generation params | 02-02 |
+| Guest credits deducted after success only | Prevents credit loss on failed generations | 02-02 |
 
 ## Notes
 
@@ -110,4 +114,4 @@ npx supabase functions deploy generate-image --no-verify-jwt
 ```
 
 ---
-*Last updated: 2026-03-08 (02-01 error types and classification completed)*
+*Last updated: 2026-03-08 (02-02 ErrorMessage redesign, guest credit fix, retry wiring completed)*
