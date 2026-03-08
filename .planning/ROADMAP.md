@@ -9,7 +9,7 @@
 | Phase | Name | Goal | Status |
 |-------|------|------|--------|
 | 1 | Frontend Foundation | Stabilize uncommitted work, verify features | Complete (6/6) |
-| 2 | Try-On Quality | Improve generation reliability & garment label UX | Planning (2 plans) |
+| 2 | Try-On Quality | Improve generation reliability & garment label UX | In Progress (1/2 plans) |
 | 3 | Social Publishing Fix | Fix LATE API 400 error, connection flow | Pending |
 | 4 | Credits & Payment Polish | Edge cases, error states, receipts | Pending |
 | 5 | Landing Page & Conversion | Better examples, copy, onboarding | Pending |
@@ -80,7 +80,7 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Error types, translations, edge fn classification, service parsing
+- [x] 02-01-PLAN.md — Error types, translations, edge fn classification, service parsing
 - [ ] 02-02-PLAN.md — ErrorMessage redesign, guest credit fix, retry wiring
 
 ---
