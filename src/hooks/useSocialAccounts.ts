@@ -22,6 +22,9 @@ export function useSocialAccounts() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishingPlatforms, setPublishingPlatforms] = useState<Set<string>>(new Set());
   const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const clearError = useCallback(() => setError(null), []);
 
   // Fetch connected accounts from DB
   const fetchAccounts = useCallback(async () => {
@@ -34,8 +37,10 @@ export function useSocialAccounts() {
 
       if (error) throw error;
       setAccounts(data || []);
-    } catch {
-      // Fetch failed silently
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Paskyrų gavimo klaida';
+      setError(msg);
+      console.error('Fetch accounts error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -77,27 +82,32 @@ export function useSocialAccounts() {
         // Refresh local state
         await fetchAccounts();
       }
-    } catch {
-      // Sync failed silently
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Paskyrų sinchronizavimo klaida';
+      setError(msg);
+      console.error('Sync accounts error:', err);
     }
   }, [fetchAccounts]);
 
   // Connect a new account via LATE OAuth
-  const connectAccount = useCallback(async (platform: string) => {
+  const connectAccount = useCallback(async (platform: string): Promise<Window | null> => {
+    setError(null);
     try {
       const { data, error } = await supabase.functions.invoke('connect-social-account', {
-        body: { action: 'get-auth-url', platform },
+        body: { action: 'get-auth-url', platform, redirectUrl: window.location.origin + '/oauth-callback' },
       });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message || 'Prisijungimo klaida');
 
       if (data?.success && data.authUrl) {
-        // Open OAuth flow in new window
-        window.open(data.authUrl, '_blank', 'width=600,height=700');
+        const popup = window.open(data.authUrl, '_blank', 'width=600,height=700');
+        return popup;
       } else {
-        throw new Error('Nepavyko gauti prisijungimo nuorodos');
+        throw new Error(data?.error || 'Nepavyko gauti prisijungimo nuorodos');
       }
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Prisijungimo klaida';
+      setError(msg);
       throw err;
     }
   }, []);
@@ -156,10 +166,12 @@ export function useSocialAccounts() {
     isPublishing,
     publishingPlatforms,
     publishResult,
+    error,
     fetchAccounts,
     syncAccounts,
     connectAccount,
     publishPost,
     setPublishResult,
+    clearError,
   };
 }
