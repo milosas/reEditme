@@ -261,8 +261,12 @@ async function handleTryOn(body: GenerateRequest): Promise<GenerateResponse> {
   console.log('All garment images uploaded:', garmentUrls)
 
   // 3. Sequential FASHN try-on — sync call (avoids queue nested-path URL issues)
+  // num_samples only makes sense for the last garment (previous steps feed into next)
+  const numSamples = (body.imageCount && body.imageCount > 1 && garmentUrls.length === 1) ? Math.min(body.imageCount, 4) : 1
+
   for (let i = 0; i < garmentUrls.length; i++) {
     const category = toFashnCategory(body.garmentLabels?.[i])
+    const isLastStep = i === garmentUrls.length - 1
     console.log(`FASHN try-on step ${i + 1}/${garmentUrls.length}: category=${category}, model=${currentModelUrl.substring(0, 60)}`)
 
     const fashnResponse = await fetch('https://fal.run/fal-ai/fashn/tryon/v1.6', {
@@ -275,7 +279,10 @@ async function handleTryOn(body: GenerateRequest): Promise<GenerateResponse> {
         model_image: currentModelUrl,
         garment_image: garmentUrls[i],
         category,
-        garment_photo_type: 'auto',
+        garment_photo_type: body.garmentPhotoType || 'auto',
+        mode: body.qualityMode || 'balanced',
+        output_format: 'jpeg',
+        ...(isLastStep && numSamples > 1 ? { num_samples: numSamples } : {}),
       }),
     })
 
@@ -287,6 +294,22 @@ async function handleTryOn(body: GenerateRequest): Promise<GenerateResponse> {
 
     const result = await fashnResponse.json() as { image?: { url: string }; images?: Array<{ url: string }> }
     console.log(`Step ${i + 1} result keys:`, Object.keys(result))
+
+    // On last step with num_samples > 1, return all images
+    if (isLastStep && numSamples > 1 && result.images && result.images.length > 1) {
+      console.log(`Last step returned ${result.images.length} variants`)
+      const allImages: GeneratedImage[] = await Promise.all(
+        result.images.map(async (img: { url: string }) => {
+          const base64 = await downloadImageAsBase64(img.url)
+          return { url: img.url, base64 }
+        })
+      )
+      return {
+        success: true,
+        images: allImages,
+        message: 'Try-on generated!',
+      }
+    }
 
     const resultImageUrl = result.image?.url || result.images?.[0]?.url
     if (!resultImageUrl) {
@@ -335,6 +358,8 @@ async function handleBackgroundReplace(body: GenerateRequest): Promise<GenerateR
   const result = await falQueueSubmitAndPoll('fal-ai/bria/background/replace', {
     image_url: sourceUrl,
     prompt: body.backgroundPrompt,
+    fast: true,
+    refine_prompt: true,
   }) as { images?: Array<{ url: string }> }
 
   if (!result.images || result.images.length === 0) {
@@ -467,11 +492,12 @@ serve(async (req) => {
     const mode = body!.mode || 'tryon'
     console.log(`Processing request: mode=${mode}`)
 
-    // Credit check for tryon mode only (skip for guest users and poll requests)
+    // Credit check for all modes (skip for guest users)
     const isGuest = body!.guest === true
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
     let creditUser: { userId: string; balance: number } | null = null
-    if (mode === 'tryon' && !isGuest) {
+    const creditAction = mode === 'tryon' ? 'tryon_photo' : 'post_process'
+    if (!isGuest) {
       const authHeader = req.headers.get('authorization') || req.headers.get('Authorization')
       if (!authHeader) {
         return new Response(JSON.stringify({
@@ -484,7 +510,7 @@ serve(async (req) => {
       }
 
       try {
-        creditUser = await checkCreditsFromToken(authHeader, supabase, 'tryon_photo')
+        creditUser = await checkCreditsFromToken(authHeader, supabase, creditAction)
       } catch (creditErr: any) {
         if (creditErr.type === 'unauthorized') {
           return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -524,9 +550,9 @@ serve(async (req) => {
         throw new Error(`Unknown mode: ${mode}`)
     }
 
-    // Deduct credits after successful tryon generation (skip for guests)
-    if (mode === 'tryon' && creditUser && response.success && !isGuest) {
-      await checkAndDeductCredits(supabase, creditUser.userId, 'tryon_photo')
+    // Deduct credits after successful generation (skip for guests)
+    if (creditUser && response.success && !isGuest) {
+      await checkAndDeductCredits(supabase, creditUser.userId, creditAction)
     }
 
     return new Response(JSON.stringify(response), {

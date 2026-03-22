@@ -125,7 +125,7 @@ serve(async (req) => {
         guidance_scale: 4,
         id_weight: 0.9,
         true_cfg: 1.5,
-        max_sequence_length: '256',
+        max_sequence_length: 256,
       }) as { images?: Array<{ url: string }> }
 
       if (!pulidResult.images || pulidResult.images.length === 0) {

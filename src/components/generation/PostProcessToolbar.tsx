@@ -1,28 +1,40 @@
 import { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { SCENES, POSE_PRESETS } from '../../constants/fluxOptions';
+import { SCENES, POSE_PRESETS, LIGHTING_PRESETS } from '../../constants/fluxOptions';
 
 interface PostProcessToolbarProps {
   isProcessing: boolean;
-  onApply: (type: 'background' | 'pose' | 'edit', prompt: string) => void;
+  onApply: (type: 'background' | 'relight' | 'pose' | 'edit', prompt: string) => void;
 }
 
 export function PostProcessToolbar({ isProcessing, onApply }: PostProcessToolbarProps) {
   const { t } = useLanguage();
   const [selectedBg, setSelectedBg] = useState<string | null>(null);
   const [selectedPose, setSelectedPose] = useState<string | null>(null);
+  const [selectedLighting, setSelectedLighting] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState('');
 
   const pp = (t as Record<string, unknown>).postProcess as Record<string, string> | undefined;
 
-  const handleSelectBg = (promptHint: string) => {
-    setSelectedBg(prev => prev === promptHint ? null : promptHint);
+  const clearSelections = () => {
+    setSelectedBg(null);
     setSelectedPose(null);
+    setSelectedLighting(null);
+  };
+
+  const handleSelectBg = (promptHint: string) => {
+    clearSelections();
+    setSelectedBg(prev => prev === promptHint ? null : promptHint);
   };
 
   const handleSelectPose = (promptHint: string) => {
+    clearSelections();
     setSelectedPose(prev => prev === promptHint ? null : promptHint);
-    setSelectedBg(null);
+  };
+
+  const handleSelectLighting = (lightingId: string) => {
+    clearSelections();
+    setSelectedLighting(prev => prev === lightingId ? null : lightingId);
   };
 
   const handleApplyBg = () => {
@@ -34,6 +46,12 @@ export function PostProcessToolbar({ isProcessing, onApply }: PostProcessToolbar
   const handleApplyPose = () => {
     if (selectedPose) {
       onApply('pose', selectedPose);
+    }
+  };
+
+  const handleApplyLighting = () => {
+    if (selectedLighting) {
+      onApply('relight', selectedLighting);
     }
   };
 
@@ -156,6 +174,50 @@ export function PostProcessToolbar({ isProcessing, onApply }: PostProcessToolbar
             <div className="mt-3">
               <button
                 onClick={handleApplyPose}
+                className="px-4 py-2 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#E55A2B] transition-colors"
+              >
+                {pp?.apply || 'Taikyti'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-[#E5E5E3]" />
+
+        {/* Lighting */}
+        <div>
+          <h4 className="text-sm font-semibold text-[#1A1A1A] mb-1">
+            {pp?.lighting || 'Apšvietimas'}
+          </h4>
+          <p className="text-xs text-[#999999] mb-2.5">
+            {pp?.lightingDesc || 'AI pakeis nuotraukos apšvietimą pagal pasirinktą stilių.'}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {LIGHTING_PRESETS.map((preset) => {
+              const isSelected = selectedLighting === preset.id;
+              return (
+                <button
+                  key={preset.id}
+                  onClick={() => handleSelectLighting(preset.id)}
+                  disabled={isProcessing}
+                  className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+                    isProcessing
+                      ? 'bg-[#F7F7F5] text-[#999999] cursor-not-allowed'
+                      : isSelected
+                        ? 'border-2 border-[#FF6B35] bg-[#FFF0EB] text-[#FF6B35] font-medium'
+                        : 'bg-[#F7F7F5] text-[#666666] border border-[#E5E5E3] hover:border-[#FF6B35] hover:text-[#FF6B35]'
+                  }`}
+                >
+                  {preset.name}
+                </button>
+              );
+            })}
+          </div>
+          {selectedLighting && !isProcessing && (
+            <div className="mt-3">
+              <button
+                onClick={handleApplyLighting}
                 className="px-4 py-2 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#E55A2B] transition-colors"
               >
                 {pp?.apply || 'Taikyti'}

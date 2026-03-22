@@ -164,6 +164,13 @@ export const POSE_PRESETS: PosePreset[] = [
   { id: 'pointing', name: 'Rodo pirštu', promptHint: 'pointing forward with one hand' },
 ];
 
+// Post image size options for FLUX 2 Pro
+export const POST_IMAGE_SIZES = [
+  { id: 'square_hd', name: 'Kvadratas', description: '1:1 — Feed' },
+  { id: 'portrait_16_9', name: 'Portretas', description: '9:16 — Stories/Reels' },
+  { id: 'landscape_16_9', name: 'Peizažas', description: '16:9 — Baneriai' },
+] as const;
+
 // Image count options (FASHN supports up to 4)
 export const IMAGE_COUNTS: ImageCountOption[] = [
   { id: 1, name: '1 nuotrauka', description: 'Greičiau, pigiau' },

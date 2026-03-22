@@ -21,7 +21,7 @@ serve(async (req) => {
       throw new Error('FAL_KEY not configured')
     }
 
-    const body: { industry: string; prompt: string; guest?: boolean } = await req.json()
+    const body: { industry: string; prompt: string; image_size?: string; guest?: boolean } = await req.json()
 
     // Credit check (skip for guest users)
     const isGuest = body.guest === true
@@ -113,7 +113,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         prompt: imagePrompt,
-        image_size: 'square_hd',
+        image_size: body.image_size || 'square_hd',
         output_format: 'png',
         safety_tolerance: '2',
       }),

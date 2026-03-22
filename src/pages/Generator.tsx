@@ -43,7 +43,8 @@ export default function Generator() {
   const [config, setConfig] = useState<Config>({
     avatar: null,
     qualityMode: 'balanced',
-    imageCount: 1
+    imageCount: 1,
+    garmentPhotoType: 'auto'
   });
 
   // Garment labels per uploaded image
@@ -118,7 +119,8 @@ export default function Generator() {
     setConfig({
       avatar: null,
       qualityMode: 'balanced',
-      imageCount: 1
+      imageCount: 1,
+      garmentPhotoType: 'auto'
     });
   };
 
@@ -148,14 +150,18 @@ export default function Generator() {
 
   const [pendingSavePrompt, setPendingSavePrompt] = useState<string | null>(null);
 
-  const handleApply = async (type: 'background' | 'pose' | 'edit', prompt: string) => {
+  const handleApply = async (type: 'background' | 'relight' | 'pose' | 'edit', prompt: string) => {
     const sourceUrl = getSelectedImageUrl();
     if (!sourceUrl) return;
 
-    const action = type === 'background' ? 'background' : 'edit';
+    const action = type === 'background' ? 'background'
+      : type === 'relight' ? 'relight'
+      : 'edit';
     const params = type === 'background'
       ? { backgroundPrompt: prompt }
-      : { editPrompt: prompt };
+      : type === 'relight'
+        ? { lightingStyle: prompt }
+        : { editPrompt: prompt };
 
     const result = await postProcess.process(action, sourceUrl, params);
     if (result) {
@@ -409,13 +415,23 @@ export default function Generator() {
         <ErrorMessage errorType={state.error} onDismiss={handleErrorDismiss} onRetry={retry} />
       )}
 
-      {/* Insufficient credits modal */}
+      {/* Insufficient credits modal — generation */}
       {creditError && (
         <InsufficientCreditsModal
           isOpen={!!creditError}
           onClose={() => { clearCreditError(); handleErrorDismiss(); }}
           required={creditError.required}
           balance={creditError.balance}
+        />
+      )}
+
+      {/* Insufficient credits modal — post-processing */}
+      {postProcess.creditError && (
+        <InsufficientCreditsModal
+          isOpen={!!postProcess.creditError}
+          onClose={() => postProcess.clearCreditError()}
+          required={postProcess.creditError.required}
+          balance={postProcess.creditError.balance}
         />
       )}
     </div>

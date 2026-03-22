@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../hooks/useToast';
 import { GalleryGrid } from '../components/gallery/GalleryGrid';
+import { InsufficientCreditsModal } from '../components/credits/InsufficientCreditsModal';
 import { GalleryLightbox } from '../components/gallery/GalleryLightbox';
 import { EmptyState } from '../components/gallery/EmptyState';
 import { SectionHeader } from '../components/gallery/SectionHeader';
@@ -147,14 +148,18 @@ export default function Gallery() {
 
   const [pendingSavePrompt, setPendingSavePrompt] = useState<string | null>(null);
 
-  const handleApply = useCallback(async (type: 'background' | 'pose' | 'edit', prompt: string) => {
+  const handleApply = useCallback(async (type: 'background' | 'relight' | 'pose' | 'edit', prompt: string) => {
     const sourceUrl = getEditingImageUrl();
     if (!sourceUrl) return;
 
-    const action = type === 'background' ? 'background' : 'edit';
+    const action = type === 'background' ? 'background'
+      : type === 'relight' ? 'relight'
+      : 'edit';
     const params = type === 'background'
       ? { backgroundPrompt: prompt }
-      : { editPrompt: prompt };
+      : type === 'relight'
+        ? { lightingStyle: prompt }
+        : { editPrompt: prompt };
 
     const result = await postProcess.process(action, sourceUrl, params);
     if (result) {
@@ -558,6 +563,16 @@ export default function Gallery() {
           onCreatePost={handleModelTryOn}
           onDownload={handleModelDownload}
           onDelete={handleDeleteModel}
+        />
+      )}
+
+      {/* Insufficient credits modal — post-processing */}
+      {postProcess.creditError && (
+        <InsufficientCreditsModal
+          isOpen={!!postProcess.creditError}
+          onClose={() => postProcess.clearCreditError()}
+          required={postProcess.creditError.required}
+          balance={postProcess.creditError.balance}
         />
       )}
     </div>

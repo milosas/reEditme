@@ -131,6 +131,7 @@ export async function generateImages(
     avatarImageUrl: avatarImageUrl,
     avatarImageBase64: avatarImageBase64,
     avatarIsCustom: config.avatar?.isCustom || false,
+    garmentPhotoType: config.garmentPhotoType || 'auto',
     ...(filteredLabels && filteredLabels.length > 0 ? { garmentLabels: filteredLabels } : {}),
     ...(guest ? { guest: true } : {}),
   };
@@ -198,17 +199,21 @@ export async function postProcessImage(
   },
   signal: AbortSignal
 ): Promise<GenerationResponse> {
+  const guest = await isGuestUser();
+  const token = await getAuthToken();
+
   const requestBody = {
     mode: action,
     sourceImageUrl,
-    ...params
+    ...params,
+    ...(guest ? { guest: true } : {}),
   };
 
   const response = await fetch(API_CONFIG.generateUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${API_CONFIG.supabaseAnonKey}`,
+      'Authorization': `Bearer ${token}`,
       'apikey': API_CONFIG.supabaseAnonKey
     },
     body: JSON.stringify(requestBody),
@@ -216,14 +221,18 @@ export async function postProcessImage(
   });
 
   if (!response.ok) {
-    let errorMsg = 'API_ERROR';
+    let errorData: { error?: string; message?: string; required?: number; balance?: number } | null = null;
     try {
-      const errData = await response.json();
-      errorMsg = errData.message || errData.error || `API error (${response.status})`;
+      errorData = await response.json();
     } catch {
-      errorMsg = `API error (${response.status})`;
+      // ignore
     }
-    throw new Error(errorMsg);
+
+    if (response.status === 402 && errorData?.error === 'insufficient_credits') {
+      throw new Error(`INSUFFICIENT_CREDITS:${errorData.required}:${errorData.balance}`);
+    }
+
+    throw new Error(errorData?.message || errorData?.error || `API error (${response.status})`);
   }
 
   const data: GenerationResponse = await response.json();

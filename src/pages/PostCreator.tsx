@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import type { Translations } from '../i18n/translations';
 import { useAuth } from '../hooks/useAuth';
 import { usePostCreator } from '../hooks/usePostCreator';
+import { POST_IMAGE_SIZES } from '../constants/fluxOptions';
 import { GuestCreditBanner } from '../components/credits/GuestCreditBanner';
 import { AnimatedSection } from '../components/animation/AnimatedSection';
 import { PostConfigPanel } from '../components/post-creator/PostConfig';
@@ -96,6 +97,34 @@ export default function PostCreator() {
             }}
           />
         </div></AnimatedSection>
+
+        {/* 2.3. Image size selector (only for AI generation) */}
+        {pc.imageSource === 'ai' && (
+          <AnimatedSection delay={0.15}><div>
+            <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
+              {'Paveikslėlio formatas'}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {POST_IMAGE_SIZES.map((size) => {
+                const isSelected = pc.imageSize === size.id;
+                return (
+                  <button
+                    key={size.id}
+                    onClick={() => pc.setImageSize(size.id)}
+                    className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+                      isSelected
+                        ? 'bg-[#FF6B35] text-white'
+                        : 'bg-[#F7F7F5] text-[#666666] border border-[#E5E5E3] hover:border-[#FF6B35] hover:text-[#FF6B35]'
+                    }`}
+                  >
+                    {size.name}
+                    <span className="ml-1 text-xs opacity-70">{size.description}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div></AnimatedSection>
+        )}
 
         {/* 2.5. Generate text from image button */}
         {pc.imagePreview && !pc.generatedText && (

@@ -1,7 +1,7 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 // Credit action types matching all edge function operations
-export type CreditAction = 'model_photo' | 'tryon_photo' | 'post_image' | 'post_text' | 'text_from_image'
+export type CreditAction = 'model_photo' | 'tryon_photo' | 'post_image' | 'post_text' | 'text_from_image' | 'post_process'
 
 // Centralized credit costs — single source of truth for all edge functions
 export const CREDIT_COSTS: Record<CreditAction, { cost: number; description: string }> = {
@@ -10,6 +10,7 @@ export const CREDIT_COSTS: Record<CreditAction, { cost: number; description: str
   post_image: { cost: 3, description: 'Iraso nuotrauka' },
   post_text: { cost: 1, description: 'Iraso tekstas' },
   text_from_image: { cost: 1, description: 'Tekstas is nuotraukos' },
+  post_process: { cost: 1, description: 'Post-apdorojimas' },
 }
 
 /**

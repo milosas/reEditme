@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../hooks/useToast';
-import { AVATARS, QUALITY_MODES } from '../../constants/fluxOptions';
-import type { Avatar, QualityModeOption, Config } from '../../types';
+import { AVATARS, QUALITY_MODES, GARMENT_PHOTO_TYPES } from '../../constants/fluxOptions';
+import type { Avatar, QualityModeOption, GarmentPhotoTypeOption, Config } from '../../types';
 import { useAvatarModels } from '../../hooks/useAvatarModels';
 import { useAuth } from '../../hooks/useAuth';
 import { ModelCard } from '../avatars/ModelCard';
@@ -40,6 +40,10 @@ export function ConfigPanel({ config, onConfigChange }: ConfigPanelProps) {
 
   const handleQualityModeChange = (mode: QualityModeOption) => {
     onConfigChange({ ...config, qualityMode: mode.id });
+  };
+
+  const handleGarmentPhotoTypeChange = (gpt: GarmentPhotoTypeOption) => {
+    onConfigChange({ ...config, garmentPhotoType: gpt.id as Config['garmentPhotoType'] });
   };
 
   const handleAddPhotoToModel = (modelId: string) => {
@@ -343,6 +347,35 @@ export function ConfigPanel({ config, onConfigChange }: ConfigPanelProps) {
                 }`}
               >
                 {getQualityModeName(mode)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Garment Photo Type — pill buttons */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-[#1A1A1A]">
+          {(t as Record<string, unknown>).garmentPhotoTypeLabel as string || 'Nuotraukos tipas'}
+        </label>
+        <p className="text-xs text-[#999999]">
+          {(t as Record<string, unknown>).garmentPhotoTypeHint as string || 'Kaip buvo nufotografuotas drabužis'}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {GARMENT_PHOTO_TYPES.map((gpt) => {
+            const isSelected = config.garmentPhotoType === gpt.id;
+            const translated = ((t as Record<string, unknown>).garmentPhotoTypes as Record<string, { name: string }> | undefined)?.[gpt.id];
+            return (
+              <button
+                key={gpt.id}
+                onClick={() => handleGarmentPhotoTypeChange(gpt)}
+                className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+                  isSelected
+                    ? 'bg-[#FF6B35] text-white'
+                    : 'bg-[#F7F7F5] text-[#666666] border border-[#E5E5E3] hover:border-[#FF6B35] hover:text-[#FF6B35]'
+                }`}
+              >
+                {translated?.name || gpt.name}
               </button>
             );
           })}

@@ -32,6 +32,8 @@ interface UsePostCreatorReturn {
   imagePreview: string | null;
   setImagePreview: (v: string | null) => void;
   generatedImageUrl: string | null;
+  imageSize: string;
+  setImageSize: (v: string) => void;
 
   // Output
   generatedText: string;
@@ -75,6 +77,7 @@ export function usePostCreator(): UsePostCreatorReturn {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [imageSize, setImageSize] = useState('square_hd');
 
   // Output state
   const [generatedText, setGeneratedText] = useState('');
@@ -213,7 +216,7 @@ export function usePostCreator(): UsePostCreatorReturn {
 
     setIsLoadingImage(true);
     try {
-      const result = await generatePostImage({ industry, prompt });
+      const result = await generatePostImage({ industry, prompt, image_size: imageSize });
       setGeneratedImageUrl(result.imageUrl);
       notifyCreditChange();
       return result.imageUrl;
@@ -353,6 +356,7 @@ export function usePostCreator(): UsePostCreatorReturn {
     imageFile, setImageFile,
     imagePreview, setImagePreview,
     generatedImageUrl,
+    imageSize, setImageSize,
     generatedText,
     isStreaming,
     isLoadingText,

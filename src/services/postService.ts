@@ -40,6 +40,7 @@ interface GenerateTextParams {
 interface GenerateImageParams {
   industry: string;
   prompt: string;
+  image_size?: string;
 }
 
 /**

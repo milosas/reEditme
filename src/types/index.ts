@@ -85,4 +85,5 @@ export interface Config {
   avatar: Avatar | null;
   qualityMode: QualityMode;
   imageCount: ImageCount;
+  garmentPhotoType: GarmentPhotoType;
 }
